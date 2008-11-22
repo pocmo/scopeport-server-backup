@@ -25,19 +25,19 @@ Blacklist::Blacklist(mySQLData myDBData)
 }
 
 bool Blacklist::checkHost(string host){
-	// Initialize database connection.  
+	// Initialize database connection.
 	if(initConnection()){
 		MYSQL* init = getHandle();
 		stringstream query;
-		query	<< "SELECT ID FROM blacklist WHERE host = '"
+		query	<< "SELECT id FROM blacklisted_hosts WHERE host = '"
 				<< host
 				<< "'";
 		if(mysql_real_query(init, query.str().c_str(), strlen(query.str().c_str())) != 0){
-			// Query was not successful.  
+			// Query was not successful.
 			mysql_close(init);
 			return 0;
 		}else{
-			// Query successful.  
+			// Query successful.
 			MYSQL_RES* res = mysql_store_result(init);
 			if(mysql_num_rows(res) > 0){
 				// IP was found.
@@ -45,7 +45,7 @@ bool Blacklist::checkHost(string host){
 				mysql_close(init);
 				return 0;
 			}
-			// IP was not found.  
+			// IP was not found.
 			mysql_free_result(res);
 			mysql_close(init);
 			return 1;
@@ -55,15 +55,15 @@ bool Blacklist::checkHost(string host){
 }
 
 bool Blacklist::blackHost(string host){
-	// Initialize database connection.  
+	// Initialize database connection.
 	if(initConnection()){
 		MYSQL* init = getHandle();
 		stringstream query;
-		query	<< "INSERT INTO blacklist(host) VALUES('"
+		query	<< "INSERT INTO blacklisted_hosts(host,created_at) VALUES('"
 				<< host
-				<< "')";
+				<< "', NOW())";
 		if(mysql_real_query(init, query.str().c_str(), strlen(query.str().c_str())) != 0){
-			// Query was not successful.  
+			// Query was not successful.
 			mysql_close(init);
 			return 0;
 		}
