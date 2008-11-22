@@ -148,7 +148,7 @@ void ServiceChecks::doChecks(MYSQL* init){
 					sendWarning(checkid, recpGroup, hostname, port, 0);
 					close(sock);
 					i++;
-					query << "0, lastcheck = " << rawtime << " WHERE ID = " << checkid;
+					query << "0, lastcheck = " << rawtime << " WHERE id = " << checkid;
 					// Query and check if query was successful.
 					if(!setQuery(init, query.str())){
 						continue;
@@ -171,7 +171,7 @@ void ServiceChecks::doChecks(MYSQL* init){
 					sendWarning(checkid, recpGroup, hostname, port, 0);
 					close(sock);
 					i++;
-					query << "0, lastcheck = " << rawtime << " WHERE ID = " << checkid;
+					query << "0, lastcheck = " << rawtime << " WHERE id = " << checkid;
 					// Query and check if query was successful.
 					if(!setQuery(init, query.str())){
 						continue;
