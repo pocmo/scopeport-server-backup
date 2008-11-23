@@ -125,7 +125,11 @@ bool Database::setQuery(MYSQL* init, string query){
 		// Query successful.
 		return 1;
 	}
+
 	// Query failed.
+
+	error = mysql_error(init);
+
 	return 0;
 }
 
