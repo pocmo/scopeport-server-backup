@@ -151,39 +151,184 @@ unsigned long resolveName(char* server){
 	return *((unsigned long*) host->h_addr_list[0]);
 }
 
-// Rude checks thread. Checks database defined services every ~60 seconds.
-void* serviceChecks(void* arg){
-	if(fallbackMode){
-		while(!fallbackActive)
-			sleep(1000);
-	}
+//// Rude checks thread. Checks database defined services every ~60 seconds.
+//void* serviceChecks(void* arg){
+//	if(fallbackMode){
+//		while(!fallbackActive)
+//			sleep(1000);
+//	}
+//
+//	ServiceChecks checks(dbData);
+//	Log log(LOGFILE, dbData);
+//	Database db(dbData);
+//	while(1){
+//		if(db.initConnection()){
+//			// Refresh check table.
+//			if(!checks.getChecks()){
+//				log.putLog(2, "017", "Could not refresh service check table. Database error.");
+//			}else{
+//				// Do soft checks.
+//				checks.doChecks(db.getHandle());
+//			}
+//
+//			mysql_close(db.getHandle());
+//			sleep(10);
+//		}else{
+//			// Could not connect to database.
+//			log.putLog(2, "018", "Could not start service check module! (Database error) - "
+//							"Retry in 5 minutes.");
+//
+//			GeneralNotifications gn(dbData, mailData, xmppData, clickatellData);
+//			gn.sendMessages("Critical failure", "Could not start service check module! (Database error) Retry in 5 minutes.");
+//
+//			sleep(300);
+//		}
+//	}
+//	return arg;
+//}
 
-	ServiceChecks checks(dbData);
+void* serviceHandler(void* arg){
 	Log log(LOGFILE, dbData);
 	Database db(dbData);
-	while(1){
-		if(db.initConnection()){
-			// Refresh check table.
-			if(!checks.getChecks()){
-				log.putLog(2, "017", "Could not refresh service check table. Database error.");
-			}else{
-				// Do soft checks.
-				checks.doChecks(db.getHandle());
-			}
 
+	// This struct holds the information about this service and handler.
+	serviceData service;
+
+	// Calculate a kinda random ID for this handler.
+    static timeval tv;
+    static timeval tv2;
+    static struct timezone tz;
+    gettimeofday(&tv, &tz);
+    gettimeofday(&tv2, &tz);
+   	service.handlerID = tv.tv_usec * 3;
+
+	// Try to establish a database connection.
+	if(db.initConnection()){
+		// Fetch a service to handle.
+		string query = "SELECT id, host, port, service_type FROM services WHERE handler = 0 AND disabled = 0 LIMIT 1";
+		if(mysql_real_query(db.getHandle(), query.c_str(), strlen(query.c_str())) == 0){
+			// Query successful.
+			MYSQL_ROW serviceResult;
+			MYSQL_RES* res = mysql_store_result(db.getHandle());
+			serviceResult = mysql_fetch_row(res);
+			if(mysql_num_rows(res) > 0){
+				// A service has been fetched.
+				service.serviceID = atoi(serviceResult[0]);
+				service.host = serviceResult[1];
+				service.port = atoi(serviceResult[2]);
+				service.service_type = serviceResult[3];
+			}else{
+				// No services have been fetched.
+				mysql_free_result(res);
+				mysql_close(db.getHandle());
+				return arg;
+			}
+			mysql_free_result(res);
+		}else{
+			log.putLog(2, "2000", "Could not fetch service to handle.");
 			mysql_close(db.getHandle());
-			sleep(10);
+			return arg;
+		}
+
+		if(service.serviceID == 0){
+			mysql_close(db.getHandle());
+			return arg;
+		}
+
+		// The service data is now available in MYSQL_ROW service.
+
+		// Announce that this handler handles the service.
+		stringstream announce;
+		announce	<< "UPDATE services SET handler = "
+					<< service.handlerID
+					<< " WHERE id = "
+					<< service.serviceID;
+
+		if(!db.setQuery(db.getHandle(), announce.str())){
+			log.putLog(2, "3000", "Could not update service handler.");
+			mysql_close(db.getHandle());
+			return arg;
+		}
+
+		mysql_close(db.getHandle());
+
+	}else{
+		// Could not establish a database connection. Close this thread.
+		return arg;
+	}
+
+	// We got all the service data in the struct serviceData.
+
+	// Run forever
+	while(1){
+		// Check if this service is still wanted to be checked for.
+		if(db.initConnection()){
+			stringstream checkService;
+			checkService	<< "SELECT id FROM services WHERE id = "
+							<< service.serviceID
+							<< " AND disabled = 0";
+			unsigned int serviceState = db.getNumOfResults(checkService.str());
+			if(serviceState <= 0){
+				stringstream message;
+				message	<< "Closing service handler #" << service.handlerID
+						<< " as it is not needed anymore.";
+				log.putLog(0, "NOTICE", message.str());
+				mysql_close(db.getHandle());
+				return arg;
+			}
+		}else{
+			return arg;
+		}
+
+		cout << "handler " << service.handlerID << " checks service with id " << service.serviceID
+				<< " (host " << service.host << ":" << service.port << " /" << service.service_type << ")"
+				<< endl;
+		// Sleep one minute until next check.
+		sleep(60);
+	}
+
+	return arg;
+}
+
+void* serviceChecks(void* arg){
+	Log log(LOGFILE, dbData);
+	Database db(dbData);
+	// Run forever.
+	while(1){
+		// Try to establish a database connection.
+		if(db.initConnection()){
+			// Get the number of services that have no handler yet.
+			unsigned int numOfServices = db.getNumOfResults("SELECT id FROM services WHERE handler = 0");
+			mysql_close(db.getHandle());
+
+			// Start a thread for every service that has no handler yet.
+			for(unsigned int i = 0;i < numOfServices; i++){
+				// Start thread.
+				pthread_t thread;
+				if(pthread_create(&thread, 0, serviceHandler, NULL)) {
+					log.putLog(2, "1000", "Could not create service thread");
+				}
+
+				// Wait one second before starting the next thread.
+				sleep(1);
+			}
 		}else{
 			// Could not connect to database.
 			log.putLog(2, "018", "Could not start service check module! (Database error) - "
-							"Retry in 5 minutes.");
-
+										"Retry in 5 minutes.");
 			GeneralNotifications gn(dbData, mailData, xmppData, clickatellData);
-			gn.sendMessages("Critical failure", "Could not start service check module! (Database error) Retry in 5 minutes.");
+			gn.sendMessages("Critical failure", "Could not start service check module! "
+					"(Database error) Retry in 5 minutes.");
 
+			// Sleep five minutes.
 			sleep(300);
 		}
+
+		// Everything went fine. Wait a minute for next check.
+		sleep(60);
+
 	}
+
 	return arg;
 }
 
@@ -1448,12 +1593,12 @@ int main(){
 	pidwrite.close();
 
 	// Signal handling.  (could need improvements here!)
-	signal(SIGABRT, cleanUp);
-	signal(SIGFPE, cleanUp);
-	signal(SIGILL, cleanUp);
-	signal(SIGINT, cleanUp);
-	signal(SIGSEGV, cleanUp);
-	signal(SIGTERM, cleanUp);
+//	signal(SIGABRT, cleanUp);
+//	signal(SIGFPE, cleanUp);
+//	signal(SIGILL, cleanUp);
+//	signal(SIGINT, cleanUp);
+//	signal(SIGSEGV, cleanUp);
+//	signal(SIGTERM, cleanUp);
 
 	Database db(dbData);
 
@@ -1562,6 +1707,15 @@ int main(){
 		}else{
 			// Query failed. Disable mailing.
 			mailData.doMailing = 0;
+		}
+
+		// Reset the client handlers.
+		if(!db.setQuery(db.getHandle(), "UPDATE services SET handler = 0")){
+			// Resetting the handlers failed.
+			cout	<< "Could not reset service handlers. Terminating. "
+					<< "(MySQL: " << db.getError() << ")"
+					<< endl;
+			exit(-1);
 		}
 
 		if((servSock = socket(AF_INET, SOCK_STREAM, 0)) == -1){

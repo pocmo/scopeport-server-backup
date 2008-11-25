@@ -32,37 +32,37 @@ class Database {
 		 * \sa checkTables()
 		 */
 		vector<string>	tables;
-		
+
 		//! The MySQL handle.
 		MYSQL			*init;
-		
+
 		//! Holds the last error message.
 		string			error;
-		
+
 		//! Holds the name of a missing table if found by checkTables().
 		/*!
 		 * \sa checkTables()
 		 */
 		string			missingcol;
-		
+
 		//! The host the MySQL database is running on.
 		const char*		mysql_host;
-		
+
 		//! The user we want to connect with to the MySQL database.
 		const char*		mysql_user;
-		
+
 		//! The MySQL user's password.
 		const char*		mysql_password;
-		
+
 		//! The ScopePort database on the MySQL host.
 		const char*		mysql_database;
-		
+
 		//! The port we want to use for MySQL connection. (0 means standard port)
 		int				mysql_port;
 	public:
 		//! Constructor. Converts sqlData values to single variables.
 		Database(mySQLData sqlData);
-		
+
 		//! Checks if tables defined in vector<string> tables exist.
 		/*!
 		 * \sa checkTables()
@@ -70,35 +70,42 @@ class Database {
 		 * \return False if not all tables were found or another error occured, true if all tables were found.
 		 */
 		bool	checkTables();
-		
+
 		//! Opens connection to MySQL server
 		/*!
 		 * \return False if connection could not be established or creating the handle failed, true if connected to database.
-		 */		
+		 */
 		bool	initConnection();
-		
-		//! Performs query and does not give back any data. Useful for INSERT, UPDATE or DELETE queries.  
+
+		//! Performs query and does not give back any data. Useful for INSERT, UPDATE or DELETE queries.
 		/*!
-		 * \param init A MySQL handle.  
+		 * \param init A MySQL handle.
 		 * \param query The query string.
-		 * \return True if the query has been executed successfully or false if an error occured.  
+		 * \return True if the query has been executed successfully or false if an error occured.
 		 */
 		bool	setQuery(MYSQL* init, string query);
-		
+
 		//! Performs query and gives back result string of first requested field.
 		/*
 		 * \param query The query string.
 		 * \return "NULL" if an error occured (or nothing was fetched) or the result string.
 		 */
 		string	sGetQuery(string query);
-		
+
+		//! Performs query and gives back number of fetched rows.
+		/*
+		 * \param query The query string.
+		 * \return The number of fetched rows.
+		 */
+		unsigned int getNumOfResults(string query);
+
 		//! Performs query and gives back result string of first and second requested field separated by a whitespace.
 		/*
 		 * \param query The query string.
 		 * \return "NULL" if an error occured (or nothing was fetched) or the result string.
 		 */
 		string	sGetQuery2(string query);
-		
+
 		//! Deletes data from table "sensordata" that is older than 31 days.
 		/*
 		 * \return False in case of error, true if everything went fine.
@@ -110,36 +117,36 @@ class Database {
 		 * \return False in case of error, true if everything went fine.
 		 */
 		bool	clearServiceData();
-		
-		//! Stores received sensordata in database.  
+
+		//! Stores received sensordata in database.
 		/*!
 		 * \param timestamp The timestamp of when the package was received.
-		 * \param host The host ID of the transmitting host.  
+		 * \param host The host ID of the transmitting host.
 		 * \param st Sensor type ID
 		 * \param sv Sensor value
 		 * \return True if data has been stored, false in case of error.
 		 */
 		bool	saveStream(string timestamp, string host, string st, string sv);
-		
+
 		//! Returns the MySQL handle.
 		/*!
 		 * \sa init
 		 * \sa initConnection()
 		 */
 		MYSQL*	getHandle() { return init; }
-		
-		//! Returns the last error message.  
+
+		//! Returns the last error message.
 		/*!
 		 * \sa error
 		 */
 		string	getError() { return error; }
-		
+
 		//! Returns the missing table reported by checkTables()
 		/*!
 		 * \sa checkTables()
 		 */
 		string	getMissingTable() { return missingcol; }
-		
+
 		//! Returns the number of tables that should be checked.
 		/*!
 		 * \sa checkTables()

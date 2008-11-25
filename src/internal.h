@@ -133,6 +133,14 @@ struct enData {
 	int		ID;
 };
 
+struct serviceData {
+	unsigned int	handlerID;
+	unsigned int	serviceID;
+	unsigned int	port;
+	string			service_type;
+	string			host;
+};
+
 // Functions.
 string noSpaces(string str);
 char* noNewLine(char* str, int size);
