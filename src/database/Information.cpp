@@ -64,7 +64,7 @@ string Information::getReceiverGroup(string hostid, string st){
  *
  */
 
-string Information::getServiceReceiverGroup(string serviceID){
+string Information::getServiceReceiverGroup(unsigned int serviceID){
 
 	stringstream query;
 
@@ -84,7 +84,7 @@ string Information::getServiceReceiverGroup(string serviceID){
  *
  */
 
-string Information::getServiceName(string serviceID){
+string Information::getServiceName(unsigned int serviceID){
 	stringstream query;
 
 	query	<< "SELECT name FROM services WHERE id = "
@@ -103,7 +103,7 @@ string Information::getLastWarn(string hostid, string st){
 	return query.str();
 }
 
-string Information::getLastServiceWarn(string serviceID){
+string Information::getLastServiceWarn(unsigned int serviceID){
 	stringstream query;
 
 
@@ -135,7 +135,7 @@ string Information::setLastWarn(time_t lastwarn, string hostid, string st){
  *
  */
 
-string Information::setLastServiceWarn(time_t lastwarn, string serviceID){
+string Information::setLastServiceWarn(time_t lastwarn, unsigned int serviceID){
 	stringstream query;
 
 	// SoftCheck.

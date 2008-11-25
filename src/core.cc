@@ -25,8 +25,8 @@
 #include "fallback/Fallback.h"
 // Host blacklist.
 #include "conversation/Blacklist.h"
-// Service checks.
-#include "services/ServiceChecks.h"
+// Services.
+#include "services/Services.h"
 // Warning conditions.
 #include "notifications/Warning.h"
 // Converting numbers to names etc.
@@ -191,21 +191,21 @@ void* serviceHandler(void* arg){
 	Log log(LOGFILE, dbData);
 	Database db(dbData);
 
-	// This struct holds the information about this service and handler.
-	serviceData service;
-
 	// Calculate a kinda random ID for this handler.
     static timeval tv;
     static timeval tv2;
     static struct timezone tz;
     gettimeofday(&tv, &tz);
     gettimeofday(&tv2, &tz);
-   	service.handlerID = tv.tv_usec * 3;
+    unsigned int handlerID = tv.tv_usec * 3;
+
+	Services service(dbData, handlerID);
 
 	// Try to establish a database connection.
 	if(db.initConnection()){
 		// Fetch a service to handle.
-		string query = "SELECT id, host, port, service_type FROM services WHERE handler = 0 AND disabled = 0 LIMIT 1";
+		string query = "SELECT id, host, port, service_type, allowed_fails, maxres, host FROM services "
+				"WHERE handler = 0 AND disabled = 0 LIMIT 1";
 		if(mysql_real_query(db.getHandle(), query.c_str(), strlen(query.c_str())) == 0){
 			// Query successful.
 			MYSQL_ROW serviceResult;
@@ -213,10 +213,13 @@ void* serviceHandler(void* arg){
 			serviceResult = mysql_fetch_row(res);
 			if(mysql_num_rows(res) > 0){
 				// A service has been fetched.
-				service.serviceID = atoi(serviceResult[0]);
-				service.host = serviceResult[1];
-				service.port = atoi(serviceResult[2]);
-				service.service_type = serviceResult[3];
+				service.setServiceID(atoi(serviceResult[0]));
+				service.setHost(serviceResult[1]);
+				service.setPort(atoi(serviceResult[2]));
+				service.setServiceType(serviceResult[3]);
+				service.setAllowedFails(atoi(serviceResult[4]));
+				service.setMaximumResponse(atoi(serviceResult[5]));
+				service.setHostname(serviceResult[6]);
 			}else{
 				// No services have been fetched.
 				mysql_free_result(res);
@@ -230,19 +233,14 @@ void* serviceHandler(void* arg){
 			return arg;
 		}
 
-		if(service.serviceID == 0){
-			mysql_close(db.getHandle());
-			return arg;
-		}
-
 		// The service data is now available in MYSQL_ROW service.
 
 		// Announce that this handler handles the service.
 		stringstream announce;
 		announce	<< "UPDATE services SET handler = "
-					<< service.handlerID
+					<< service.getHandlerID()
 					<< " WHERE id = "
-					<< service.serviceID;
+					<< service.getServiceID();
 
 		if(!db.setQuery(db.getHandle(), announce.str())){
 			log.putLog(2, "3000", "Could not update service handler.");
@@ -265,25 +263,42 @@ void* serviceHandler(void* arg){
 		if(db.initConnection()){
 			stringstream checkService;
 			checkService	<< "SELECT id FROM services WHERE id = "
-							<< service.serviceID
+							<< service.getServiceID()
 							<< " AND disabled = 0";
 			unsigned int serviceState = db.getNumOfResults(checkService.str());
 			if(serviceState <= 0){
 				stringstream message;
-				message	<< "Closing service handler #" << service.handlerID
+				message	<< "Closing service handler #" << service.getHandlerID()
 						<< " as it is not needed anymore.";
 				log.putLog(0, "NOTICE", message.str());
 				mysql_close(db.getHandle());
 				return arg;
 			}
+			mysql_close(db.getHandle());
 		}else{
 			return arg;
 		}
 
-		cout << "handler " << service.handlerID << " checks service with id " << service.serviceID
-				<< " (host " << service.host << ":" << service.port << " /" << service.service_type << ")"
-				<< endl;
-		// Sleep one minute until next check.
+		// Check service now.
+
+		if(service.checkService() == 0 || service.checkService() == 2){
+			/*
+			 * The service is down or has a too high response time.
+			 * The method will find out if the response time was too high
+			 * or if the service is just down itself.
+			 */
+			service.sendWarning();
+		}else if(service.checkService() < 0){
+			/*
+			 * The service could not be checked because an internal error occured.
+			 * Send a general warning!
+			 */
+			GeneralNotifications gn(dbData, mailData, xmppData, clickatellData);
+			gn.sendMessages("Critical failure", "Could not check service because an "
+					"internal error occured");
+		}
+
+		// The service is online and responded fast enough. Wait 60 seconds until next check.
 		sleep(60);
 	}
 

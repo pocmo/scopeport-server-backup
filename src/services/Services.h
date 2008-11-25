@@ -25,57 +25,98 @@
 
 class Services : public Database{
 	protected:
-		//! The list of rudechecks to perform.
-		/*!
-		 * \sa RudeChecks
-		 */
-		map<int,string> rudeList;
-
-		//! The list of softchecks to perform.
-		/*!
-		 * \sa SoftChecks
-		 */
-		map<int,string> softList;
-
-		//! Holds the last error message.
-		string error;
-
 		//! Holds login and connection information of MySQL database.
 		mySQLData dbData;
-	public:
-		Services(mySQLData myDBData);
 
-		//! Returns the last error message.
-		/*!
-		 * \sa error
-		 */
-		string getError(){ return error; }
+	private:
+		unsigned int	handlerID;
+		unsigned int	serviceID;
+		unsigned int	port;
+		unsigned int	allowedFails;
+		unsigned int	responseTime;
+		unsigned int	maximumResponse;
+		string 			host;
+		string 			serviceType;
+		string			notiGroup;
+		string			hostname;
+
+	public:
+		Services(mySQLData myDBData, unsigned int myHandlerID);
+
+
+		void setServiceID(unsigned int serviceID);
+		void setAllowedFails(unsigned int allowedFails);
+		void setPort(unsigned int port);
+		void setMaximumResponse(unsigned int maxres);
+		void setHost(string host);
+		void setServiceType(string serviceType);
+		void setNotiGroup(string notiGroup);
+		void setHostname(string hostname);
+
+		unsigned int getServiceID();
+		unsigned int getHandlerID();
+
+		int checkService();
+
+		void updateStatus(int status);
 
 		//! Checks if the response time of a service is in range.
 		/*!
-		 * \param checkID The ID of the soft- or rudecheck
-		 * \param ms The response time
 		 * \returns True if the response time is in range, false if not.
 		 */
-		bool checkResponseTime(string checkID, int ms);
+		bool checkResponseTime();
 
 		//! Sends warning if service has failed
-		/*!
-		 * \param checkID The ID of the soft- or rudecheck
-		 * \param recvGroup The ID of the receiver group
-		 * \param hostname The name of the host this service runs on
-		 * \param port The port of the checked service
-		 * \param ms The response time of the service
-		 */
-		void sendWarning(string checkID, string recvGroup,
-				string hostname, int port, int ms);
+		void sendWarning();
 
 		//! Stores response time in database.
 		/*!
 		 * \param checkid The ID of the soft- or rudecheck
 		 * \param ms The response time to store
 		 */
-		bool storeResponseTime(string checkid, int ms);
+		bool storeResponseTime();
+
+		//! Check if there is an SMTP server behind given socket connection.
+		/*!
+		 * \param sock The socket to test on
+		 * \return 0 in case of error/wrong protocol or the response time in milliseconds if everything went fine
+		 */
+		int checkSMTP(int sock);
+
+		//! Check if there is an HTTP server behind given socket connection.
+		/*!
+		 * \param sock The socket to test on
+		 * \return 0 in case of error/wrong protocol or the response time in milliseconds if everything went fine
+		 */
+		int checkHTTP(int sock);
+
+		//! Check if there is an IMAP server behind given socket connection.
+		/*!
+		 * \param sock The socket to test on
+		 * \return 0 in case of error/wrong protocol or the response time in milliseconds if everything went fine
+		 */
+		int checkIMAP(int sock);
+
+		//! Check if there is an POP3 server behind given socket connection.
+		/*!
+		 * \param sock The socket to test on
+		 * \return 0 in case of error/wrong protocol or the response time in milliseconds if everything went fine
+		 */
+		int checkPOP3(int sock);
+
+		//! Check if there is an SSH server behind given socket connection.
+		/*!
+		 * \param sock The socket to test on
+		 * \return 0 in case of error/wrong protocol or the response time in milliseconds if everything went fine
+		 */
+		int checkSSH(int sock);
+
+		//! Check if there is an FTP server behind given socket connection.
+		/*!
+		 * \param sock The socket to test on
+		 * \return 0 in case of error/wrong protocol or the response time in milliseconds if everything went fine
+		 */
+		int checkFTP(int sock);
 };
 
 #endif /*SERVICES_H_*/

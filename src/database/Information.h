@@ -63,14 +63,14 @@ class Information{
 		 * \param serviceID The service ID
 		 * \return Query
 		 */
-		static string getServiceReceiverGroup(string serviceID);
+		static string getServiceReceiverGroup(unsigned int serviceID);
 
 		//! Returns query to get the name of service with given ID.
 		/*!
 		 * \param serviceID The service ID
 		 * \return Query
 		 */
-		static string getServiceName(string serviceID);
+		static string getServiceName(unsigned int serviceID);
 
 		//! Returns query to get the timestamp of when the last notification for a sensor was sent.
 		/*!
@@ -85,7 +85,7 @@ class Information{
 		 * \param serviceID the service ID
 		 * \return Query
 		 */
-		static string getLastServiceWarn(string serviceID);
+		static string getLastServiceWarn(unsigned int serviceID);
 
 		//! Returns query to set the timestamp of when the last notification for a sensor was sent.
 		/*!
@@ -102,7 +102,7 @@ class Information{
 		 * \param serviceID Service ID
 		 * \return Query
 		 */
-		static string setLastServiceWarn(time_t lastwarn, string serviceID);
+		static string setLastServiceWarn(time_t lastwarn, unsigned int serviceID);
 
 		//! Returns query to get the defined severity of a sensor.
 		/*!
