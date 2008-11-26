@@ -22,13 +22,13 @@ const timeval& Timer::getTime() const {
     static struct timezone tz;
     gettimeofday(&tv, &tz);
     return tv;
-} 
+}
 
 void Timer::startTimer(){
 	stimeval = getTime();
 }
 
 unsigned int Timer::stopTimer(){
-	timeval timeval = getTime(); 
-	 return ( timeval.tv_sec - stimeval.tv_sec ) * 1000000 + ( timeval.tv_usec - stimeval.tv_usec ); 	
+	timeval timeval = getTime();
+	return ( timeval.tv_sec - stimeval.tv_sec ) * 1000000 + ( timeval.tv_usec - stimeval.tv_usec );
 }

@@ -100,6 +100,8 @@ int Services::checkService(){
 	memcpy((char *) &server.sin_addr, (char *) host->h_addr, host->h_length);
 	server.sin_port=htons(port);
 
+	sleep(1);
+
 	// Connect and measure time it takes to connect.
 	Timer t;
 	t.startTimer();
@@ -414,7 +416,7 @@ void Services::sendWarning(){
 
 			// Build query for scheduled downtime check.
 			stringstream checkDowntimeQuery;
-			checkDowntimeQuery	<< "SELECT ID FROM downtimes"
+			checkDowntimeQuery	<< "SELECT id FROM downtimes"
 									" WHERE serviceid = " << serviceID <<
 								   " AND type = 2 AND `from` < " << rawtime <<
 								   " AND `to` > " << rawtime;
