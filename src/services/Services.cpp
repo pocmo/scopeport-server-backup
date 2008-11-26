@@ -227,9 +227,7 @@ bool Services::checkResponseTime(){
 }
 
 void Services::sendWarning(){
-	// Exit if the receiver is emtpy.
-	if(notiGroup.empty())
-		return;
+	Log log(LOGFILE, dbData);
 
 	// Initialize database connection.
 	if(initConnection()){
@@ -324,7 +322,7 @@ void Services::sendWarning(){
 			mysql_free_result(res);
 		}else{
 			// Query failed. Disable mailing.
-				mailData.doMailing = 0;
+			mailData.doMailing = 0;
 		}
 
 		// Create mailing object.
@@ -425,6 +423,7 @@ void Services::sendWarning(){
 			if(mysql_real_query(getHandle(), checkDowntimeQuery.str().c_str(),
 					strlen(checkDowntimeQuery.str().c_str())) != 0){
 				// Query was not successful.
+				log.putLog(1, "5678", "Could not fetch downtimes for service alarm.");
 				mysql_close(getHandle());
 				return;
 			}else{
@@ -432,8 +431,6 @@ void Services::sendWarning(){
 
 				time_t alarmtime;
 				time(&alarmtime);
-
-				Log log(LOGFILE, dbData);
 
 				// Check if a downtime was scheduled for this service.
 				MYSQL_RES* sdres = mysql_store_result(getHandle());
@@ -454,7 +451,7 @@ void Services::sendWarning(){
 
 				// Insert warning into database.
 				stringstream alarmSQL;
-				alarmSQL	<< "INSERT INTO alarms (type, timestamp, checkid, ms) VALUES ('2','"
+				alarmSQL	<< "INSERT INTO alarms (type, timestamp, serviceid, ms) VALUES ('2','"
 							<< alarmtime
 							<< "','"
 							<< serviceID
@@ -519,6 +516,8 @@ void Services::sendWarning(){
 			}
 		}
 		mysql_close(getHandle());
+	}else{
+		log.putLog(2, "1234", "Could not connect to database for service warning/alarm.");
 	}
 }
 
