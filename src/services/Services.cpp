@@ -853,7 +853,6 @@ int Services::checkFTP(int sock){
 	}else{
 		return 0;
 	}
-	cout << checkBuffer << endl;
 
 	// Make it easier for us to substr().
 	stringstream reply2;
