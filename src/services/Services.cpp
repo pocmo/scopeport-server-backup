@@ -580,6 +580,8 @@ int Services::checkSMTP(int sock){
 	if((len = send(sock,message,strlen(message),0)) <= 0)
 		return 0;
 
+	sleep(1);
+
 	Timer t;
 
 	t.startTimer();
@@ -589,7 +591,6 @@ int Services::checkSMTP(int sock){
 		return 0;
 
 	ms = t.stopTimer();
-
 	// Quit message to close the connection.
 	const char* quitMessage = "QUIT";
 
@@ -632,7 +633,7 @@ int Services::checkHTTP(int sock){
 	if((len = send(sock,message,strlen(message),0)) <= 0)
 		return 0;
 
-	sleep(5);
+	sleep(1);
 
 	Timer t;
 
@@ -673,6 +674,8 @@ int Services::checkIMAP(int sock){
 	// Will hold the length of the reply.
 	int len;
 
+	sleep(1);
+
 	Timer t;
 
 	t.startTimer();
@@ -711,6 +714,8 @@ int Services::checkPOP3(int sock){
 
 	// Will hold the length of the reply.
 	int len;
+
+	sleep(1);
 
 	Timer t;
 
@@ -757,6 +762,8 @@ int Services::checkSSH(int sock){
 
 	// Will hold the length of the reply.
 	int len;
+
+	sleep(1);
 
 	Timer t;
 
@@ -806,6 +813,8 @@ int Services::checkFTP(int sock){
 
 	// Will hold the length of the reply.
 	int len;
+
+	sleep(1);
 
 	Timer t;
 
