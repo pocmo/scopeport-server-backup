@@ -1328,6 +1328,7 @@ void cleanUp(int sig){
 }
 
 void logTLS(int level, const char *message){
+	cout << "TU ES:" << message << endl;
 	Log log(LOGFILE, dbData);
 	stringstream logmsg;
 	logmsg << message;
@@ -1566,13 +1567,14 @@ int main(){
 
 	cout << "- TLS initialization:\t";
 	cout.flush();
+
 	// GnuTLS variables.
 	static gnutls_dh_params_t dh_params;
 
 	// GnuTLS initialization.
 	gnutls_global_init();
 	gnutls_global_set_log_function(logTLS);
-	gnutls_global_set_log_level(0);
+	gnutls_global_set_log_level(9001);
 	gnutls_anon_allocate_server_credentials(&anoncred);
 	gnutls_dh_params_init(&dh_params);
 	gnutls_dh_params_generate2 (dh_params, DH_BITS);
@@ -1609,13 +1611,15 @@ int main(){
 	}
 	pidwrite.close();
 
+#ifndef DEBUG
 	// Signal handling.  (could need improvements here!)
-//	signal(SIGABRT, cleanUp);
-//	signal(SIGFPE, cleanUp);
-//	signal(SIGILL, cleanUp);
-//	signal(SIGINT, cleanUp);
-//	signal(SIGSEGV, cleanUp);
-//	signal(SIGTERM, cleanUp);
+	signal(SIGABRT, cleanUp);
+	signal(SIGFPE, cleanUp);
+	signal(SIGILL, cleanUp);
+	signal(SIGINT, cleanUp);
+	signal(SIGSEGV, cleanUp);
+	signal(SIGTERM, cleanUp);
+#endif
 
 	Database db(dbData);
 

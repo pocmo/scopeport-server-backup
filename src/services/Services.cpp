@@ -400,7 +400,7 @@ void Services::sendWarning(){
 						<< ") has response time \""
 						<< responseTime
 						<< "ms\"!";
-			qms = 1;
+			qms = responseTime;
 		}
 
 		string lastWarn;
@@ -451,7 +451,7 @@ void Services::sendWarning(){
 
 				// Insert warning into database.
 				stringstream alarmSQL;
-				alarmSQL	<< "INSERT INTO alarms (type, timestamp, serviceid, ms) VALUES ('2','"
+				alarmSQL	<< "INSERT INTO alarms (alarm_type, timestamp, serviceid, ms) VALUES ('2','"
 							<< alarmtime
 							<< "','"
 							<< serviceID
@@ -530,12 +530,10 @@ bool Services::storeResponseTime(){
 		time_t thistime;
 		time(&thistime);
 
-		queryAllData << "INSERT INTO servicedata(timestamp, serviceid, type, ms) VALUES('"
+		queryAllData << "INSERT INTO servicerecords(timestamp, serviceid, ms) VALUES('"
 						<< thistime
 						<< "', '"
 						<< serviceID
-						<< "', '"
-						<< 1
 						<< "', '"
 						<< responseTime
 						<< "')";

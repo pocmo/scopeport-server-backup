@@ -212,7 +212,7 @@ bool Database::clearServiceData(){
 	unsigned int yesterday = time(NULL)-86400;
 
 	stringstream query;
-	query	<< "DELETE FROM servicedata WHERE timestamp < ";
+	query	<< "DELETE FROM servicerecords WHERE timestamp < ";
 	query	<< yesterday;
 
 	if(mysql_real_query(init, query.str().c_str(), strlen(query.str().c_str())) == 0){
