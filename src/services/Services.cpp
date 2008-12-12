@@ -93,7 +93,7 @@ int Services::checkService(){
 		// Host unknown.
 		close(sock);
 		updateStatus(3);
-		return -1;
+		return 0;
 	}
 
 	// Connect to defined port.
