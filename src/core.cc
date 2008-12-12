@@ -255,7 +255,7 @@ void* serviceHandler(void* arg){
 		return arg;
 	}
 
-	// We got all the service data in the struct serviceData.
+	// We got all the service data.
 
 	// Run forever
 	while(1){

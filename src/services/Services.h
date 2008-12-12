@@ -23,7 +23,7 @@
 #include "../internal.h"
 #include "../database/Database.h"
 
-class Services : public Database{
+class Services : public Database {
 	protected:
 		//! Holds login and connection information of MySQL database.
 		mySQLData dbData;
