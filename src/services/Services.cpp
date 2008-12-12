@@ -92,7 +92,7 @@ int Services::checkService(){
 	if(host==(struct hostent *) 0){
 		// Host unknown.
 		close(sock);
-		updateStatus(3);
+		updateStatus(0);
 		return 0;
 	}
 
