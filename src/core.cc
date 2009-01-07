@@ -151,42 +151,6 @@ unsigned long resolveName(char* server){
 	return *((unsigned long*) host->h_addr_list[0]);
 }
 
-//// Rude checks thread. Checks database defined services every ~60 seconds.
-//void* serviceChecks(void* arg){
-//	if(fallbackMode){
-//		while(!fallbackActive)
-//			sleep(1000);
-//	}
-//
-//	ServiceChecks checks(dbData);
-//	Log log(LOGFILE, dbData);
-//	Database db(dbData);
-//	while(1){
-//		if(db.initConnection()){
-//			// Refresh check table.
-//			if(!checks.getChecks()){
-//				log.putLog(2, "017", "Could not refresh service check table. Database error.");
-//			}else{
-//				// Do soft checks.
-//				checks.doChecks(db.getHandle());
-//			}
-//
-//			mysql_close(db.getHandle());
-//			sleep(10);
-//		}else{
-//			// Could not connect to database.
-//			log.putLog(2, "018", "Could not start service check module! (Database error) - "
-//							"Retry in 5 minutes.");
-//
-//			GeneralNotifications gn(dbData, mailData, xmppData, clickatellData);
-//			gn.sendMessages("Critical failure", "Could not start service check module! (Database error) Retry in 5 minutes.");
-//
-//			sleep(300);
-//		}
-//	}
-//	return arg;
-//}
-
 void* serviceHandler(void* arg){
 	Log log(LOGFILE, dbData);
 	Database db(dbData);
