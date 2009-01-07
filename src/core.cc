@@ -192,12 +192,12 @@ void* serviceHandler(void* arg){
 	Database db(dbData);
 
 	// Calculate a kinda random ID for this handler.
-    static timeval tv;
-    static timeval tv2;
-    static struct timezone tz;
-    gettimeofday(&tv, &tz);
-    gettimeofday(&tv2, &tz);
-    unsigned int handlerID = tv.tv_usec * 3;
+  static timeval tv;
+  static timeval tv2;
+  static struct timezone tz;
+  gettimeofday(&tv, &tz);
+  gettimeofday(&tv2, &tz);
+  unsigned int handlerID = tv.tv_usec * 3;
 
 	Services service(dbData, handlerID);
 
@@ -212,7 +212,14 @@ void* serviceHandler(void* arg){
 			MYSQL_RES* res = mysql_store_result(db.getHandle());
 			serviceResult = mysql_fetch_row(res);
 			if(mysql_num_rows(res) > 0){
-				// A service has been fetched.
+				// TODO: Do this for all results. Return arg if any field is NULL.
+				if(serviceResult[0] == NULL){
+					// We got NULL fields.
+					mysql_free_result(res);
+					mysql_close(db.getHandle());
+					return arg;
+				}
+				// A service has been fetched. TODO: Create service object here and pass data to constructor.
 				service.setServiceID(atoi(serviceResult[0]));
 				service.setHost(serviceResult[1]);
 				service.setPort(atoi(serviceResult[2]));
@@ -299,7 +306,6 @@ void* serviceHandler(void* arg){
 			gn.sendMessages("Critical failure", "Could not check service because an "
 					"internal error occured");
 		}
-
 		// The service is online and responded fast enough. Wait 60 seconds until next check.
 		sleep(60);
 	}
@@ -1328,7 +1334,6 @@ void cleanUp(int sig){
 }
 
 void logTLS(int level, const char *message){
-	cout << "TU ES:" << message << endl;
 	Log log(LOGFILE, dbData);
 	stringstream logmsg;
 	logmsg << message;
@@ -1574,7 +1579,7 @@ int main(){
 	// GnuTLS initialization.
 	gnutls_global_init();
 	gnutls_global_set_log_function(logTLS);
-	gnutls_global_set_log_level(9001);
+	gnutls_global_set_log_level(0);
 	gnutls_anon_allocate_server_credentials(&anoncred);
 	gnutls_dh_params_init(&dh_params);
 	gnutls_dh_params_generate2 (dh_params, DH_BITS);
