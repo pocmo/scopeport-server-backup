@@ -62,6 +62,7 @@ bool Database::checkTables(){
 	 *
 	 */
 
+  // TODO: bring this back alive
 //	tables.push_back("hosts:ID.hostid.password.hostname.linux_kernelversion.domainname.hda_model.hdb_model.hdc_model.hdd_model.total_memory.total_swap.cpu_vendor.cpu_modelname.cpu_mhz.cpu_cachesize.swaps.disabled");
 //	tables.push_back("sensordata:timestamp.host.st.sv");
 //	tables.push_back("sensors:ID.st.name.description.standard_condition_type.standard_condition_value.overview.needscondition");
@@ -268,13 +269,14 @@ bool Database::saveStream(string timestamp, string host, string st, string sv){
 		doDelQuery = 1;
 
 	}else{
-		// We have a profile sensor package.
+		/ We have a profile sensor package.
 		query << "UPDATE hosts SET ";
 
 		if(	st == "01" || st == "02" || st == "03" || st == "04" ||
 			st == "05" || st == "06" || st == "07" || st == "08" ||
 			st == "09" || st == "010" || st == "011" || st == "012" ||
-			st == "013" || st == "014" || st == "016" || st == "017"){
+			st == "013" || st == "014" || st == "016" || st == "017" ||
+      st == ""){
 				// Hostname.
 				if(st == "01")
 					query << "hostname = '";
