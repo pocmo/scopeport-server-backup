@@ -37,7 +37,7 @@ class Mail{
 		 * \sa mailData
 		 */
 		void updateSettings(mailingData myMailData);
-		
+
 		//! Sends email
 		/*!
 		 * \param toMail The receiver of this email
@@ -46,6 +46,11 @@ class Mail{
 		 * \return True on success, false in case of error.
 		 */
 		bool sendMail(string toMail, string subject, string mailText);
+
+
+		//! Returns mailingData struct with settings from database.
+		static mailingData fetchSettings(mySQLData dbData);
+
 };
 
 #endif /*MAIL_H_*/

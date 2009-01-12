@@ -97,7 +97,7 @@ string encodeBase64(string stringToEncode) {
 
 bool Mail::sendMail(string toMail, string subject, string mailText){
 
-	// Prepared debug data.  
+	// Prepared debug data.
 	//	cout	<< "from: "
 	//			<< mailData.mailFrom
 	//			<< endl
@@ -109,42 +109,46 @@ bool Mail::sendMail(string toMail, string subject, string mailText){
 	//			<< endl
 	//			<< "text: "
 	//			<< mailText
+	//			<< endl << endl
+	//			<< "hostname: " << mailData.mailHostname << endl
+	//			<< "user: " << mailData.mailUser << endl
+	//			<< "password: " << mailData.mailPass
 	//			<< endl << endl;
-		
+
 	struct sockaddr_in server;
 	struct hostent *host;
-	// Create socket.  
+	// Create socket.
 	sock = socket(AF_INET, SOCK_STREAM, 0);
 	if(sock < 0){
-		// Creating socket failed.  
+		// Creating socket failed.
 		return 0;
 	}
-	
-	// Verify host.  
+
+	// Verify host.
 	server.sin_family = AF_INET;
 	host = gethostbyname(mailData.mailServer.c_str());
 	if(host==(struct hostent *) 0){
-		// Host unknown.  
+		// Host unknown.
 		return 0;
 	}
-	
-	// Connect to defined SMTP port.  
+
+	// Connect to defined SMTP port.
 	memcpy((char *) &server.sin_addr, (char *) host->h_addr, host->h_length);
 	server.sin_port=htons(mailData.mailPort);
-	
+
 	if(connect(sock, (struct sockaddr *) &server, sizeof server) < 0) {
-		// Could not connect.  
+		// Could not connect.
 		return 0;
 	}
-	
-	// A little bit Conversation.  
-	
-	// Welcome string.  
+
+	// A little bit Conversation.
+
+	// Welcome string.
 	if(!read_socket())
 		return 0;
-	
+
 	if(mailData.mailUseAuth){
-		// EHLO.  
+		// EHLO.
 		stringstream ehlo;
 		ehlo	<< "EHLO "
 				<< mailData.mailHostname
@@ -152,87 +156,87 @@ bool Mail::sendMail(string toMail, string subject, string mailText){
 
 		if(!send_socket(ehlo.str()))
 			return 0;
-		// Get reply.  
+		// Get reply.
 		if(!read_socket())
 			return 0;
-		// Ask for AUTH LOGIN.  
+		// Ask for AUTH LOGIN.
 		if(!send_socket("AUTH LOGIN\n"))
 			return 0;
 		if(!read_socket())
 			return 0;
-		// Send username.  
+		// Send username.
 		if(!send_socket(encodeBase64(mailData.mailUser)))
 			return 0;
 		if(!send_socket("\n"))
 			return 0;
 		if(!read_socket())
 			return 0;
-		// Send Password.  
+		// Send Password.
 		if(!send_socket(encodeBase64(mailData.mailPass)))
 			return 0;
 		if(!send_socket("\n"))
 			return 0;
 		if(!read_socket())
 			return 0;
-	}else{	
-		// HELO.  
+	}else{
+		// HELO.
 		stringstream helo;
 		helo	<< "HELO "
 				<< mailData.mailHostname
 				<< endl;
-				
+
 		if(!send_socket(helo.str()))
 			return 0;
-		// Get reply.  
+		// Get reply.
 		if(!read_socket())
 			return 0;
 	}
 
-	// Sender.  
+	// Sender.
 	stringstream mailFrom;
 	mailFrom	<< "Mail from: <"
 				<< mailData.mailFrom
 				<< ">"
 				<< endl;
-				
+
 	if(!send_socket(mailFrom.str()))
 		return 0;
 	if(!read_socket())
 		return 0;
-	
-	// Recipient.  
+
+	// Recipient.
 	stringstream mailTo;
 	mailTo	<< "RCPT to: <"
 				<< toMail
 				<< ">"
 				<< endl;
-				
+
 	if(!send_socket(mailTo.str()))
 		return 0;
 	if(!read_socket())
 		return 0;
-	
-	// Data.  
+
+	// Data.
 	if(!send_socket("DATA\n"))
 		return 0;
 	if(!read_socket())
 		return 0;
-	
-	// Header.  
+
+	// Header.
 	stringstream headerTo;
 	headerTo	<< "to: "
 				<< toMail
 				<< endl;
 	if(!send_socket(headerTo.str()))
 		return 0;
-	
+
 	stringstream headerFrom;
 	headerFrom	<< "from: "
 				<< mailData.mailFrom
 				<< endl;
 	if(!send_socket(headerFrom.str()))
 		return 0;
-	
+
 	stringstream headerSubject;
 	headerSubject	<< "subject: [ScopePort] "
 					<< subject
@@ -243,8 +247,8 @@ bool Mail::sendMail(string toMail, string subject, string mailText){
 		return 0;
 	if(!send_socket("\n\n.\n"))
 		return 0;
-		
-	// Quit.  
+
+	// Quit.
 	if(!read_socket())
 		return 0;
 
@@ -253,9 +257,93 @@ bool Mail::sendMail(string toMail, string subject, string mailText){
 
 	if(!read_socket())
 		return 0;
-	
-	// Close socket.  
+
+	// Close socket.
 	close(sock);
-	
+
 	return 1;
+}
+
+mailingData Mail::fetchSettings(mySQLData dbData){
+  mailingData mailData;
+
+  Database db(dbData);
+  if(db.initConnection()){
+    const char* getSettingsSQL = "SELECT mail_enabled, mail_useauth, mail_server,"
+                                "mail_port, mail_user, mail_pass, mail_hostname,"
+                                "mail_from FROM settings";
+    if(mysql_real_query(db.getHandle(), getSettingsSQL, strlen(getSettingsSQL)) == 0){
+      MYSQL_RES* res;
+      if((res = mysql_store_result(db.getHandle())) != NULL){
+        MYSQL_ROW row;
+        row = mysql_fetch_row(res);
+        stringstream result;
+        if(mysql_num_rows(res) > 0){
+
+          // mail_enabled
+          if(row[0] != NULL){
+            if(strcmp(row[0], "1") == 0){
+              mailData.doMailing = 1;
+            }else{
+              mailData.doMailing = 0;
+            }
+          }
+
+          // mail_useauth
+          if(row[1] != NULL){
+            if(strcmp(row[1], "1") == 0){
+              mailData.mailUseAuth = 1;
+            }else{
+              mailData.mailUseAuth = 0;
+            }
+          }
+
+          // mail_server
+          if(row[2] != NULL){
+            mailData.mailServer = row[2];
+          }
+
+          // mail_port
+          if(row[3] != NULL){
+            mailData.mailPort = atoi(row[3]);
+          }
+
+          // mail_user
+          if(row[4] != NULL){
+            mailData.mailUser = row[4];
+          }
+
+          // mail_pass
+          if(row[5] != NULL){
+            mailData.mailPass = row[5];
+          }
+
+          // mail_hostname
+          if(row[6] != NULL){
+            mailData.mailHostname = row[6];
+          }
+
+          // mail_from
+          if(row[7] != NULL){
+            mailData.mailFrom = row[7];
+          }
+
+        }else{
+          // Nothing fetched. Disable mailing.
+          mailData.doMailing = 0;
+        }
+      }else{
+        // Error. Disable mailing.
+        mailData.doMailing = 0;
+      }
+    }else{
+      // Query failed. Disable mailing.
+      mailData.doMailing = 0;
+    }
+  }else{
+    // Could not connect to DB. Diable mailing.
+    mailData.doMailing = 0;
+  }
+
+  return mailData;
 }

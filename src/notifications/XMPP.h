@@ -57,6 +57,9 @@ class XMPP{
 		 * \return True on success, false in case of error.
 		 */
 		bool sendMessage(string message, string receiver);
+
+		//! Returns XMPPData struct with settings from database.
+		static XMPPData fetchSettings(mySQLData dbData);
 };
 
 #endif /*XMPP_H_*/

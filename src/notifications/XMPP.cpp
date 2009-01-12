@@ -245,3 +245,73 @@ bool XMPP::sendMessage(string myMessage, string receiver){
 
 	return 1;
 }
+
+
+XMPPData XMPP::fetchSettings(mySQLData dbData){
+  XMPPData xmpp;
+
+  Database db(dbData);
+  if(db.initConnection()){
+    const char* getSettingsSQL = "SELECT xmpp_enabled, xmpp_server, xmpp_port,"
+                                "xmpp_user, xmpp_pass, xmpp_resource FROM settings";
+    if(mysql_real_query(db.getHandle(), getSettingsSQL, strlen(getSettingsSQL)) == 0){
+      MYSQL_RES* res;
+      if((res = mysql_store_result(db.getHandle())) != NULL){
+        MYSQL_ROW row;
+        row = mysql_fetch_row(res);
+        stringstream result;
+        if(mysql_num_rows(res) > 0){
+
+          // xmpp_enabled
+          if(row[0] != NULL){
+            if(strcmp(row[0], "1") == 0){
+              xmpp.doXMPP = 1;
+            }else{
+              xmpp.doXMPP = 0;
+            }
+          }
+
+          // xmpp_server
+          if(row[1] != NULL){
+            xmpp.xmppServer = row[1];
+          }
+
+          // xmpp_port
+          if(row[2] != NULL){
+            xmpp.xmppPort = atoi(row[2]);
+          }
+
+          // xmpp_user
+          if(row[3] != NULL){
+            xmpp.xmppUser = row[3];
+          }
+
+          // xmpp_pass
+          if(row[4] != NULL){
+            xmpp.xmppPass = row[4];
+          }
+
+          // xmpp_resource
+          if(row[5] != NULL){
+            xmpp.xmppResource = row[5];
+          }
+
+        }else{
+          // Nothing fetched. Disable mailing.
+          xmpp.doXMPP = 0;
+        }
+      }else{
+        // Error. Disable mailing.
+        xmpp.doXMPP = 0;
+      }
+    }else{
+      // Query failed. Disable mailing.
+      xmpp.doXMPP = 0;
+    }
+  }else{
+    // Could not connect to DB. Diable mailing.
+    xmpp.doXMPP = 0;
+  }
+
+  return xmpp;
+}

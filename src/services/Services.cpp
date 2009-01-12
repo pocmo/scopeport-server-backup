@@ -20,6 +20,7 @@
 #include "../database/Database.h"
 #include "../notifications/Mail.h"
 #include "../notifications/XMPP.h"
+#include "../notifications/Clickatell.h"
 #include "../log/Log.h"
 #include "../database/Information.h"
 #include "../misc/Timer.h"
@@ -236,94 +237,9 @@ void Services::sendWarning(){
 		XMPPData xmppData;
 		mobilecData mobilecData;
 
-		// Get config parameters from database.
-		const char* getSettingsSQL = "SELECT mail_enabled, mail_useauth, mail_server,"
-								"mail_port, mail_user, mail_pass, mail_hostname,"
-								"mail_from, xmpp_enabled, xmpp_server, xmpp_port,"
-								"xmpp_user, xmpp_pass, xmpp_resource, doMobileClickatell,"
-								"mobilecUsername, mobilecPassword, mobilecAPIID FROM settings";
-
-		if(mysql_real_query(getHandle(), getSettingsSQL, strlen(getSettingsSQL)) == 0){
-			// Query successful. Fetch result pointer.
-			MYSQL_RES* res = mysql_store_result(getHandle());
-			MYSQL_ROW row;
-			// Fill row variable with data from result.
-			row = mysql_fetch_row(res);
-			stringstream result;
-			// Were rows fetched?
-			if(mysql_num_rows(res) > 0){
-				// Yes. Go on.
-
-				// mail_enabled.
-				if(strcmp(row[0],"1") == 0){
-					mailData.doMailing = 1;
-				}else{
-					mailData.doMailing = 0;
-				}
-
-				// mail_useauth.
-				if(strcmp(row[1],"1") == 0){
-					mailData.mailUseAuth = 1;
-				}else{
-					mailData.mailUseAuth = 0;
-				}
-
-				// mail_server.
-				mailData.mailServer = row[2];
-
-				// mail_port.
-				mailData.mailPort = atoi(row[3]);
-
-				// mail_user.
-				mailData.mailUser = row[4];
-
-				// mail_pass.
-				mailData.mailPass = row[5];
-
-				// mail_hostname.
-				mailData.mailHostname = row[6];
-
-				// mail_from.
-				mailData.mailFrom = row[7];
-
-				// xmpp_enabled.
-				xmppData.doXMPP = row[8];
-
-				// xmpp_server.
-				xmppData.xmppServer = row[9];
-
-				// xmpp_port.
-				xmppData.xmppPort = atoi(row[10]);
-
-				// xmpp_user.
-				xmppData.xmppUser = row[11];
-
-				// xmpp_pass.
-				xmppData.xmppPass = row[12];
-
-				// xmpp_resource.
-				xmppData.xmppResource = row[13];
-
-				// doMobileClickatell.
-				mobilecData.doMobileC = row[14];
-
-				// mobilecUsername.
-				mobilecData.username = row[15];
-
-				// mobilecPassword.
-				mobilecData.password = row[16];
-
-				// mobilecAPIID.
-				mobilecData.apiID = row[17];
-			}else{
-				// No rows fetched. Disable mailing.
-				mailData.doMailing = 0;
-			}
-			mysql_free_result(res);
-		}else{
-			// Query failed. Disable mailing.
-			mailData.doMailing = 0;
-		}
+		mailData = Mail::fetchSettings(dbData);
+		xmppData = XMPP::fetchSettings(dbData);
+		mobilecData = Clickatell::fetchSettings(dbData);
 
 		// Create mailing object.
 		Mail mailing(mailData);
@@ -579,8 +495,6 @@ int Services::checkSMTP(int sock){
 	if((len = send(sock,message,strlen(message),0)) <= 0)
 		return 0;
 
-	sleep(1);
-
 	Timer t;
 
 	t.startTimer();
@@ -632,8 +546,6 @@ int Services::checkHTTP(int sock){
 	if((len = send(sock,message,strlen(message),0)) <= 0)
 		return 0;
 
-	sleep(1);
-
 	Timer t;
 
 	t.startTimer();
@@ -673,8 +585,6 @@ int Services::checkIMAP(int sock){
 	// Will hold the length of the reply.
 	int len;
 
-	sleep(1);
-
 	Timer t;
 
 	t.startTimer();
@@ -713,8 +623,6 @@ int Services::checkPOP3(int sock){
 
 	// Will hold the length of the reply.
 	int len;
-
-	sleep(1);
 
 	Timer t;
 
@@ -761,8 +669,6 @@ int Services::checkSSH(int sock){
 
 	// Will hold the length of the reply.
 	int len;
-
-	sleep(1);
 
 	Timer t;
 
@@ -813,8 +719,6 @@ int Services::checkFTP(int sock){
 	// Will hold the length of the reply.
 	int len;
 
-	sleep(1);
-
 	Timer t;
 
 	t.startTimer();
@@ -848,8 +752,6 @@ int Services::checkFTP(int sock){
 	// Send the quit message.
 	if((len = send(sock,testLoginMessage,strlen(testLoginMessage),0)) <= 0)
 		return 0;
-
-	sleep(5);
 
 	// Read the answer and keep the length of the reply.
 	if((len = read(sock,checkBuffer, CHECKBUFSIZE-1)) <= 0)

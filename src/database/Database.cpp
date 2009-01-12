@@ -269,7 +269,7 @@ bool Database::saveStream(string timestamp, string host, string st, string sv){
 		doDelQuery = 1;
 
 	}else{
-		/ We have a profile sensor package.
+		// We have a profile sensor package.
 		query << "UPDATE hosts SET ";
 
 		if(	st == "01" || st == "02" || st == "03" || st == "04" ||

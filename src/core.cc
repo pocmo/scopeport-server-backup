@@ -39,7 +39,7 @@
 #include "notifications/Mail.h"
 // The class for XMPP conversations.
 #include "notifications/XMPP.h"
-// The class for XMPP conversations.
+// General notifications.
 #include "notifications/GeneralNotifications.h"
 // This is responsible for sending emergency notifications.
 #include "notifications/EmergencyNotifications.h"
@@ -47,6 +47,8 @@
 #include "log/Log.h"
 // This class provides information about the calling process.
 #include "health/Health.h"
+// Clickatell SMS API.
+#include "notifications/Clickatell.h"
 
 mySQLData dbData;
 mailingData mailData;
@@ -612,96 +614,18 @@ void* maintenanceThread(void* args){
 				log.putLog(1, "021", "Could not delete old service data.");
 			}
 
-			// Refresh settings from database.
-			const char* getSettingsSQL = "SELECT mail_enabled, mail_useauth, mail_server,"
-									"mail_port, mail_user, mail_pass, mail_hostname,"
-									"mail_from, xmpp_enabled, xmpp_server, xmpp_port,"
-									"xmpp_user, xmpp_pass, xmpp_resource FROM settings";
-			if(mysql_real_query(maintDB.getHandle(), getSettingsSQL, strlen(getSettingsSQL)) == 0){
-				// Query successful. Fetch result pointer.
-				MYSQL_RES* res;
-				if((res = mysql_store_result(maintDB.getHandle())) != NULL){
-					MYSQL_ROW row;
-					// Fill row variable with data from result.
-					row = mysql_fetch_row(res);
-					stringstream result;
-					// Were rows fetched?
-					if(mysql_num_rows(res) > 0){
-						// Yes. Go on.
+			mailData = Mail::fetchSettings(dbData);
+			xmppData = XMPP::fetchSettings(dbData);
+			clickatellData = Clickatell::fetchSettings(dbData);
 
-						// mail_enabled.
-						if(strcmp(row[0],"1") == 0){
-							mailData.doMailing = 1;
-						}else{
-							mailData.doMailing = 0;
-						}
+			// Update process statistics.
+			if(!maintDB.setQuery(maintDB.getHandle(), Information::updateHealth(Health::getPID(),
+					clientHandler,Health::getVMSize(), Health::getThreads(), packageCountOK,
+					packageCountERR, -1, -1, -1)))
+				log.putLog(1, "053", "Could not update health statistics.");
 
-						// mail_useauth.
-						if(strcmp(row[1],"1") == 0){
-							mailData.mailUseAuth = 1;
-						}else{
-							mailData.mailUseAuth = 0;
-						}
-
-						// mail_server.
-						mailData.mailServer = row[2];
-
-						// mail_port.
-						mailData.mailPort = atoi(row[3]);
-
-						// mail_user.
-						mailData.mailUser = row[4];
-
-						// mail_pass.
-						mailData.mailPass = row[5];
-
-						// mail_hostname.
-						mailData.mailHostname = row[6];
-
-						// mail_from.
-						mailData.mailFrom = row[7];
-
-						// xmpp_enabled.
-						xmppData.doXMPP = row[8];
-
-						// xmpp_server.
-						xmppData.xmppServer = row[9];
-
-						// xmpp_port.
-						xmppData.xmppPort = atoi(row[10]);
-
-						// xmpp_user.
-						xmppData.xmppUser = row[11];
-
-						// xmpp_pass.
-						xmppData.xmppPass = row[12];
-
-						// xmpp_resource.
-						xmppData.xmppResource = row[13];
-
-						mysql_free_result(res);
-					}else{
-						// No rows fetched. Disable mailing.
-						mysql_free_result(res);
-						mailData.doMailing = 0;
-					}
-				}else{
-					// Query failed. Disable mailing.
-					mailData.doMailing = 0;
-				}
-			}else{
-				// Query failed. Disable mailing.
-				mailData.doMailing = 0;
-			}
+			mysql_close(maintDB.getHandle());
 		}
-
-		// Update process statistics.
-		if(!maintDB.setQuery(maintDB.getHandle(), Information::updateHealth(Health::getPID(),
-				clientHandler,Health::getVMSize(), Health::getThreads(), packageCountOK,
-				packageCountERR, -1, -1, -1)))
-			log.putLog(1, "053", "Could not update health statistics.");
-
-		mysql_close(maintDB.getHandle());
 
 		// Run every minute.
 		sleep(60);
@@ -1603,101 +1527,10 @@ int main(){
 
 		db.setQuery(db.getHandle(), Information::clearHealth());
 
-		// Get config parameters from database.
-		const char* getSettingsSQL = "SELECT mail_enabled, mail_useauth, mail_server,"
-								"mail_port, mail_user, mail_pass, mail_hostname,"
-								"mail_from, xmpp_enabled, xmpp_server, xmpp_port,"
-								"xmpp_user, xmpp_pass, xmpp_resource, doMobileClickatell,"
-								"mobilecUsername, mobilecPassword, mobilecAPIID FROM settings";
-
-		if(mysql_real_query(db.getHandle(), getSettingsSQL, strlen(getSettingsSQL)) == 0){
-			// Query successful. Fetch result pointer.
-			MYSQL_RES* res;
-			if((res = mysql_store_result(db.getHandle())) != NULL){
-				MYSQL_ROW row;
-				// Fill row variable with data from result.
-				row = mysql_fetch_row(res);
-				stringstream result;
-				// Were rows fetched?
-				if(mysql_num_rows(res) > 0){
-					// Yes. Go on.
-
-					// mail_enabled.
-					if(strcmp(row[0],"1") == 0){
-						mailData.doMailing = 1;
-					}else{
-						mailData.doMailing = 0;
-					}
-
-					// mail_useauth.
-					if(strcmp(row[1],"1") == 0){
-						mailData.mailUseAuth = 1;
-					}else{
-						mailData.mailUseAuth = 0;
-					}
-
-					// mail_server.
-					mailData.mailServer = row[2];
-
-					// mail_port.
-					mailData.mailPort = atoi(row[3]);
-
-					// mail_user.
-					mailData.mailUser = row[4];
-
-					// mail_pass.
-					mailData.mailPass = row[5];
-
-					// mail_hostname.
-					mailData.mailHostname = row[6];
-
-					// mail_from.
-					mailData.mailFrom = row[7];
-
-					// xmpp_enabled.
-					xmppData.doXMPP = row[8];
-
-					// xmpp_server.
-					xmppData.xmppServer = row[9];
-
-					// xmpp_port.
-					xmppData.xmppPort = atoi(row[10]);
-
-					// xmpp_user.
-					xmppData.xmppUser = row[11];
-
-					// xmpp_pass.
-					xmppData.xmppPass = row[12];
-
-					// xmpp_resource.
-					xmppData.xmppResource = row[13];
-
-					// doMobileClickatell.
-					clickatellData.doMobileC = row[14];
-
-					// mobilecUsername.
-					clickatellData.username = row[15];
-
-					// mobilecPassword.
-					clickatellData.password = row[16];
-
-					// mobilecAPIID.
-					clickatellData.apiID = row[17];
-
-					mysql_free_result(res);
-				}else{
-					// No rows fetched. Disable mailing.
-					mysql_free_result(res);
-					mailData.doMailing = 0;
-				}
-			}else{
-				// mysql_store_result() failed. Disable mailing.
-				mailData.doMailing = 0;
-			}
-		}else{
-			// Query failed. Disable mailing.
-			mailData.doMailing = 0;
-		}
+		// Update notification settings.
+		mailData = Mail::fetchSettings(dbData);
+		xmppData = XMPP::fetchSettings(dbData);
+		clickatellData = Clickatell::fetchSettings(dbData);
 
 		// Reset the client handlers.
 		if(!db.setQuery(db.getHandle(), "UPDATE services SET handler = 0")){
