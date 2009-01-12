@@ -29,6 +29,6 @@ void Timer::startTimer(){
 }
 
 unsigned int Timer::stopTimer(){
-	timeval timeval = getTime();
-	return ( timeval.tv_sec - stimeval.tv_sec ) * 1000000 + ( timeval.tv_usec - stimeval.tv_usec );
+	timeval thetime = getTime();
+	return (thetime.tv_usec - stimeval.tv_usec)/10000;
 }
