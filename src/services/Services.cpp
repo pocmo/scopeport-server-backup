@@ -29,7 +29,7 @@ Services::Services(mySQLData myDBData, unsigned int myHandlerID)
 			: Database(myDBData){
 	dbData = myDBData;
 	handlerID = myHandlerID;
-	responseTime = 1;
+	responseTime = 0;
 }
 
 void Services::setServiceID(unsigned int x){
@@ -112,6 +112,7 @@ int Services::checkService(){
 	if(res < 0) {
 		// Could not connect. - Service not running.
 		close(sock);
+		responseTime = 0;
 		updateStatus(0);
 		return 0;
 	}else{
