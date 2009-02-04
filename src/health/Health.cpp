@@ -134,7 +134,7 @@ double Health::getDBSize(mySQLData dbData, int type){
 							break;
 						case 3:
 							// Only return size of table servicedata.
-							if(strcmp(row[0], "servicedata") == 0){
+							if(strcmp(row[0], "servicerecords") == 0){
 								// Return data length + index length.
 								mysql_free_result(res);
 								mysql_close(init);
