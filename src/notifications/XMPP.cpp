@@ -308,6 +308,7 @@ XMPPData XMPP::fetchSettings(mySQLData dbData){
       // Query failed. Disable mailing.
       xmpp.doXMPP = 0;
     }
+    mysql_close(db.getHandle());
   }else{
     // Could not connect to DB. Diable mailing.
     xmpp.doXMPP = 0;

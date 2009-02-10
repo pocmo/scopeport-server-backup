@@ -70,8 +70,9 @@ mobilecData Clickatell::fetchSettings(mySQLData dbData){
       // Query failed. Disable.
       clickatell.doMobileC = 0;
     }
+    mysql_close(db.getHandle());
   }else{
-    // Could not connect to DB. Diable.
+    // Could not connect to DB. Disable.
 	clickatell.doMobileC = 0;
   }
 

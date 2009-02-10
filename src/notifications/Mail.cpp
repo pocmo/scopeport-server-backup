@@ -340,6 +340,7 @@ mailingData Mail::fetchSettings(mySQLData dbData){
       // Query failed. Disable mailing.
       mailData.doMailing = 0;
     }
+    mysql_close(db.getHandle());
   }else{
     // Could not connect to DB. Diable mailing.
     mailData.doMailing = 0;
