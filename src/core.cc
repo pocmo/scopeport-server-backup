@@ -260,7 +260,7 @@ void* serviceHandler(void* arg){
 			/*
 			 * The service is down or has a too high response time.
 			 * The method will find out if the response time was too high
-			 * or if the service is just down itself.
+			 * or if the service is just down/not reachable.
 			 */
 			service.sendWarning();
 		}else if(serviceResult < 0){
