@@ -1,6 +1,6 @@
 // This file is part of ScopePort (Linux server).
 //
-// Copyright 2008 Lennart Koopmann
+// Copyright 2008, 2009 Lennart Koopmann
 //
 // ScopePort (Linux server) is free software: you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as published by
@@ -17,18 +17,18 @@
 
 #include "Timer.h"
 
-const timeval& Timer::getTime() const {
-    static timeval tv;
-    static struct timezone tz;
-    gettimeofday(&tv, &tz);
-    return tv;
+void Timer::startTimer() {
+	m_timeval = get_tv ();
+}
+   
+unsigned int Timer::stopTimer() const {
+	timeval timeval = get_tv ();
+	return ( timeval.tv_sec - m_timeval.tv_sec ) * 1000 + (( timeval.tv_usec - m_timeval.tv_usec ) / 1000);
 }
 
-void Timer::startTimer(){
-	stimeval = getTime();
-}
-
-unsigned int Timer::stopTimer(){
-	timeval thetime = getTime();
-	return (thetime.tv_usec - stimeval.tv_usec)/10000;
+const timeval& Timer::get_tv() const {
+	static timeval tv;
+	static struct timezone tz;
+	gettimeofday ( &tv, &tz );
+	return tv;
 }

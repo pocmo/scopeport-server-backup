@@ -22,28 +22,13 @@
 
 #include "../internal.h"
 
-class Timer	{
-	private:
-		//! This holds the timer information.
-		timeval stimeval;
-		
-		//! This fills the timeval variable.
-		/*!
-		 * \sa stimeval
-		 */
-		const timeval& getTime() const;
+class Timer {  
 	public:
-		//! Start the timer.
-		/*!
-		 * \sa stopTimer()
-		 */
-		void startTimer();
-		
-		//! Stop the timer and get time between now and start of timer.
-		/*!
-		 * \sa startTimer()
-		 */
-		unsigned int stopTimer();
+	    void startTimer();
+	    unsigned int stopTimer() const;
+	private:
+	    timeval m_timeval;
+	    const timeval& get_tv() const;
 };
 
 #endif /*TIMER_H_*/
