@@ -304,6 +304,7 @@ XMPPData XMPP::fetchSettings(mySQLData dbData){
         // Error. Disable mailing.
         xmpp.doXMPP = 0;
       }
+      mysql_free_result(res);
     }else{
       // Query failed. Disable mailing.
       xmpp.doXMPP = 0;

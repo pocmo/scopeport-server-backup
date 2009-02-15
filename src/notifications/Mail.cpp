@@ -336,10 +336,12 @@ mailingData Mail::fetchSettings(mySQLData dbData){
         // Error. Disable mailing.
         mailData.doMailing = 0;
       }
+      mysql_free_result(res);
     }else{
       // Query failed. Disable mailing.
       mailData.doMailing = 0;
     }
+    
     mysql_close(db.getHandle());
   }else{
     // Could not connect to DB. Diable mailing.

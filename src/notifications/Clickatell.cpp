@@ -66,6 +66,7 @@ mobilecData Clickatell::fetchSettings(mySQLData dbData){
         // Error. Disable.
     	clickatell.doMobileC = 0;
       }
+      mysql_free_result(res);
     }else{
       // Query failed. Disable.
       clickatell.doMobileC = 0;
