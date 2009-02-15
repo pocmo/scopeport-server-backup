@@ -72,6 +72,10 @@ unsigned int Services::getHandlerID(){
 	return handlerID;
 }
 
+unsigned int Services::getMaximumResponse(){
+	return maximumResponse;
+}
+
 int Services::checkService(){
 	Log log(LOGFILE, dbData);
 	int sock;
@@ -123,7 +127,7 @@ int Services::checkService(){
 			if(!storeResponseTime())
 				log.putLog(2, "008", "Could not update service response time.");
 
-			//Check if the response time is higher than the defined maximum.
+			// Check if the response time is higher than the defined maximum.
 			if(!checkResponseTime()){
 				// This service has a too high response time.
 				updateStatus(2);
@@ -213,9 +217,9 @@ bool Services::checkResponseTime(){
 		query	<< "SELECT maxres FROM services WHERE id = "
 				<< serviceID;
 
-		string maxres = sGetQuery(query.str());
+		setMaximumResponse(atoi(sGetQuery(query.str()).c_str()));
 
-		if(responseTime > maximumResponse){
+		if(responseTime > getMaximumResponse()){
 			// Higher than defined maximum!
 			mysql_close(getHandle());
 			return 0;

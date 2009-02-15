@@ -55,6 +55,7 @@ class Services : public Database {
 
 		unsigned int getServiceID();
 		unsigned int getHandlerID();
+		unsigned int getMaximumResponse();
 
 		int checkService();
 
