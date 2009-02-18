@@ -1,4 +1,6 @@
 Debug/*
+build/*
 .project
+.cproject
 .settings
 .cdt*
