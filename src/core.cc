@@ -1484,11 +1484,13 @@ int main(){
 
 	Log log(LOGFILE, dbData);
 
+#ifdef PRODUCTION
 	// Start as daemon!
-	//if(daemon(0,0) < 0){
-	//	cout << "Terminated. Could not initialize daemon mode!" << endl;
-	//	return 0;
-	//}
+	if(daemon(0,0) < 0){
+		cout << "Terminated. Could not initialize daemon mode!" << endl;
+		return 0;
+	}
+#endif
 
 	// We are a daemon from here on.
 

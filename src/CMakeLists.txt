@@ -1,3 +1,4 @@
+add_definitions(-DPRODUCTION)
 include_directories(/usr/include/mysql)
 link_directories(/usr/lib/)
 
