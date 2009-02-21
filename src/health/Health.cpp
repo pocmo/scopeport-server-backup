@@ -27,16 +27,14 @@ string Health::getPID(){
 
 	if(!status.fail()){
 		// We opened the file.
-		int i = 0;
 		string line;
 
 		// Go to the 4th line.
 		while(getline(status, line)){
-			if(i == 3 && line.find("Pid") != string::npos){
+			if(line.find("Pid") != string::npos){
 				status.close();
 				return noSpaces(line.erase(0,4));
 			}
-			i++;
 		}
 	}
 
@@ -53,16 +51,14 @@ string Health::getVMSize(){
 
 	if(!status.fail()){
 		// We opened the file.
-		int i = 0;
 		string line;
 
 		// Go to the 12th line.
 		while(getline(status, line)){
-			if(i == 11 && line.find("VmSize") != string::npos){
+			if(line.find("VmSize") != string::npos){
 				status.close();
 				return noSpaces(line.erase(0,7));
 			}
-			i++;
 		}
 	}
 
@@ -79,16 +75,14 @@ string Health::getThreads(){
 
 	if(!status.fail()){
 		// We opened the file.
-		int i = 0;
 		string line;
 
 		// Go to the 21st line.
 		while(getline(status, line)){
-			if(i == 20 && line.find("Threads") != string::npos){
+			if(line.find("Threads") != string::npos){
 				status.close();
 				return noSpaces(line.erase(0,8));
 			}
-			i++;
 		}
 	}
 
