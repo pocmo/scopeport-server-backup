@@ -115,7 +115,7 @@ double Health::getDBSize(mySQLData dbData, int type){
 					switch(type){
 						case 1:
 							// Sum up everything to get the total size.
-							totalSize = totalSize+atoi(row[6])+atoi(row[8]);
+							totalSize = totalSize+stringToInteger(row[6])+stringToInteger(row[8]);
 							break;
 						case 2:
 							// Only return size of table sensordata.
@@ -123,7 +123,7 @@ double Health::getDBSize(mySQLData dbData, int type){
 								// Return data length + index length.
 								mysql_free_result(res);
 								mysql_close(init);
-								return (atoi(row[6])+atoi(row[8]))/1024;
+								return (stringToInteger(row[6])+stringToInteger(row[8]))/1024;
 							}
 							break;
 						case 3:
@@ -132,7 +132,7 @@ double Health::getDBSize(mySQLData dbData, int type){
 								// Return data length + index length.
 								mysql_free_result(res);
 								mysql_close(init);
-								return (atoi(row[6])+atoi(row[8]))/1024;
+								return (stringToInteger(row[6])+stringToInteger(row[8]))/1024;
 							}
 							break;
 						default:

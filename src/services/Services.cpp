@@ -217,7 +217,7 @@ bool Services::checkResponseTime(){
 		query	<< "SELECT maxres FROM services WHERE id = "
 				<< serviceID;
 
-		setMaximumResponse(atoi(sGetQuery(query.str()).c_str()));
+		setMaximumResponse(stringToInteger(sGetQuery(query.str()).c_str()));
 
 		if(responseTime > getMaximumResponse()){
 			// Higher than defined maximum!
@@ -331,7 +331,7 @@ void Services::sendWarning(){
 		time(&rawtime);
 
 		// Only send warning all 6 hours.
-		if(rawtime-atoi(lastWarn.c_str()) > 21600){
+		if(rawtime-stringToInteger(lastWarn.c_str()) > 21600){
 
 			// Build query for scheduled downtime check.
 			stringstream checkDowntimeQuery;

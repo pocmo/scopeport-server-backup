@@ -278,7 +278,7 @@ XMPPData XMPP::fetchSettings(mySQLData dbData){
 
           // xmpp_port
           if(row[2] != NULL){
-            xmpp.xmppPort = atoi(row[2]);
+            xmpp.xmppPort = stringToInteger(row[2]);
           }
 
           // xmpp_user

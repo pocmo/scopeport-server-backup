@@ -33,7 +33,7 @@ EmergencyNotifications::EmergencyNotifications(mySQLData myDBData, mailingData m
 
 /*
  * Return values:
- * 	1: Emergency notifications to send fetched.  
+ * 	1: Emergency notifications to send fetched.
  * 	0: Nothing to send
  * -1: Error
  */
@@ -41,23 +41,23 @@ EmergencyNotifications::EmergencyNotifications(mySQLData myDBData, mailingData m
 int EmergencyNotifications::fetchTasks(){
 	if(initConnection()){
 		MYSQL* init = getHandle();
-		// Get tasks.  
+		// Get tasks.
 		const char* taskQuery = "SELECT email, jid, emergencyid, ID, numberc"
 							" FROM emergencynotifications "
 							" WHERE notifiedon = 0"
 							" LIMIT 250";
-		
+
 		if(mysql_real_query(init, taskQuery, strlen(taskQuery)) != 0){
-			// Query was not successful.  
+			// Query was not successful.
 			mysql_close(init);
 			return 0;
 		}else{
-			// Query successful.  
+			// Query successful.
 			MYSQL_RES* res = mysql_store_result(init);
 			MYSQL_ROW row;
 			if(mysql_num_rows(res) > 0){
 				unsigned int i = 0;
-				// Got notifications to send.  
+				// Got notifications to send.
 				while((row = mysql_fetch_row(res))){
 					stringstream address;
 					if(strlen(row[0]) > 0){
@@ -69,7 +69,7 @@ int EmergencyNotifications::fetchTasks(){
 								<< "|"
 								<< row[3];
 					}else if(strlen(row[1]) > 0){
-						// This is a jid.  
+						// This is a jid.
 						address << "jid|"
 								<< row[1]
 								<< "|"
@@ -77,7 +77,7 @@ int EmergencyNotifications::fetchTasks(){
 								<< "|"
 								<< row[3];
 					}else if(strlen(row[4]) > 0){
-						// This is a Clickatell mobile number.  
+						// This is a Clickatell mobile number.
 						address << "mobilec|"
 								<< row[4]
 								<< "|"
@@ -85,7 +85,7 @@ int EmergencyNotifications::fetchTasks(){
 								<< "|"
 								<< row[3];
 					}else{
-						// No email address or jid. Skip.  
+						// No email address or jid. Skip.
 						i++;
 						continue;
 					}
@@ -96,14 +96,14 @@ int EmergencyNotifications::fetchTasks(){
 				mysql_close(init);
 				return 1;
 			}else{
-				// Nothing fetched.  
+				// Nothing fetched.
 				mysql_free_result(res);
 				mysql_close(init);
 				return 1;
 			}
 		}
 	}
-	
+
 	return -1;
 }
 
@@ -113,26 +113,26 @@ int EmergencyNotifications::getListSize(){
 
 enData EmergencyNotifications::splitEmergencyInformation(int recvNum){
 	enData info;
-	// Split the receiver to get the information.  
+	// Split the receiver to get the information.
 	string token;
 	istringstream iss(notificationList[recvNum]);
 	int i = 0;
 	while(getline(iss, token, '|')){
 		switch(i){
 			case 0:
-				// The type.  
+				// The type.
 				info.type = token;
 				break;
 			case 1:
-				// The address.  
+				// The address.
 				info.address = token;
 				break;
 			case 2:
-				// The emergency ID.  
-				info.emergencyID = atoi(token.c_str());
+				// The emergency ID.
+				info.emergencyID = stringToInteger(token.c_str());
 				break;
 			case 3:
-				info.ID = atoi(token.c_str());
+				info.ID = stringToInteger(token.c_str());
 				break;
 		}
 		i++;
@@ -143,35 +143,35 @@ enData EmergencyNotifications::splitEmergencyInformation(int recvNum){
 int EmergencyNotifications::sendMessage(int recvNum){
 	enData info = splitEmergencyInformation(recvNum);
 
-	// Check if we got all needed data.  
+	// Check if we got all needed data.
 	if(info.type.length() <= 0 || info.address.length() <= 0 || info.emergencyID <= 0)
 		return -1;
-	
-	// These are used to generate a message.  
+
+	// These are used to generate a message.
 	string description;
 	string timestamp;
 	string severity;
 	string severityName;
-	
-	// Connect to database.  
+
+	// Connect to database.
 	if(initConnection()){
 		description = sGetQuery(Information::getEmergencyInformation(info.emergencyID, 0));
 		timestamp = sGetQuery(Information::getEmergencyInformation(info.emergencyID, 1));
 		severity = sGetQuery(Information::getEmergencyInformation(info.emergencyID, 2));
-		
-		// Close database connection.  
+
+		// Close database connection.
 		mysql_close(getHandle());
 	}else{
-		// Could not connect to database.  
+		// Could not connect to database.
 		return 0;
 	}
-	
-	// Check if needed information was fetched without errors.  
+
+	// Check if needed information was fetched without errors.
 	if(description == "NULL" || timestamp == "NULL" || severity == "NULL")
 		return -1;
-	
-	// Convert severity types to names.  
-	switch(atoi(severity.c_str())){
+
+	// Convert severity types to names.
+	switch(stringToInteger(severity.c_str())){
 		case 1:
 			severityName = "Medium";
 			break;
@@ -184,7 +184,7 @@ int EmergencyNotifications::sendMessage(int recvNum){
 		default:
 			return -1;
 	}
-	
+
 	// Build the message
 	stringstream message;
 	message	<< "ALERT: An emergency has been declared!"
@@ -194,24 +194,24 @@ int EmergencyNotifications::sendMessage(int recvNum){
 			<< endl << endl
 			<< "Severity: "
 			<< severityName;
-	
-	// Everything seems to be okay. Send the message.  
+
+	// Everything seems to be okay. Send the message.
 	if(info.type == "jid"){
-		// We need to send an XMPP message.  
+		// We need to send an XMPP message.
 		XMPP xmpp(xmppData, dbData);
 		if(!xmpp.sendMessage(message.str(), info.address))
 			return -1;
 		return 1;
 	}else if(info.type == "mail"){
-		// We need to send an email.  
+		// We need to send an email.
 		Mail mailing(mailData);
 		if(!mailing.sendMail(info.address, "An emergency has been declared", message.str()))
 			return -1;
 		return 1;
 	}else if(info.type == "mobilec"){
-		// We need to send an SMS via the Clickatell SMTP API.  
+		// We need to send an SMS via the Clickatell SMTP API.
 		Mail mailing(mailData);
-		// Build the message that fits to the API.  
+		// Build the message that fits to the API.
 		stringstream newMessage;
 		newMessage	<< "user:" << clickatellData.username << endl
 					<< "password:" << clickatellData.password << endl
@@ -222,30 +222,30 @@ int EmergencyNotifications::sendMessage(int recvNum){
 			return -1;
 		return 1;
 	}
-	
+
 	return -1;
 }
 
 bool EmergencyNotifications::markReceiver(int recvNum, int status){
 	enData info = splitEmergencyInformation(recvNum);
 
-	// Check if we got all needed data.  
+	// Check if we got all needed data.
 	if(info.ID <= 0)
 		return 0;
-	
-	// Connect to database.  
+
+	// Connect to database.
 	if(initConnection()){
 		if(!setQuery(getHandle(), Information::setReceiverMark(info.ID, status))){
 			mysql_close(getHandle());
 			return 0;
 		}
-		// Close database connection.  
+		// Close database connection.
 		mysql_close(getHandle());
 		return 1;
 	}else{
-		// Could not connect to database.  
+		// Could not connect to database.
 		return 0;
 	}
-	
+
 	return 0;
 }

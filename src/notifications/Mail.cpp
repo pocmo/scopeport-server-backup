@@ -305,7 +305,7 @@ mailingData Mail::fetchSettings(mySQLData dbData){
 
           // mail_port
           if(row[3] != NULL){
-            mailData.mailPort = atoi(row[3]);
+            mailData.mailPort = stringToInteger(row[3]);
           }
 
           // mail_user
@@ -341,7 +341,7 @@ mailingData Mail::fetchSettings(mySQLData dbData){
       // Query failed. Disable mailing.
       mailData.doMailing = 0;
     }
-    
+
     mysql_close(db.getHandle());
   }else{
     // Could not connect to DB. Diable mailing.

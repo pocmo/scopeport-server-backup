@@ -1,6 +1,6 @@
 // This file is part of ScopePort (Linux server).
 //
-// Copyright 2007, 2008 Lennart Koopmann
+// Copyright 2007, 2008, 2009 Lennart Koopmann
 //
 // ScopePort (Linux server) is free software: you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as published by
@@ -63,6 +63,15 @@ int heartbeatPort = 0;
 bool clientHandler = 0;
 
 gnutls_anon_server_credentials_t anoncred;
+
+int stringToInteger(string st){
+	int result;
+	if(stringstream(st) >> result){
+		return result;
+	}else{
+		return 0;
+	}
+}
 
 bool numOnly(string checkMe){
 	bool result;
@@ -186,12 +195,12 @@ void* serviceHandler(void* arg){
 					return arg;
 				}
 				// A service has been fetched. TODO: Create service object here and pass data to constructor.
-				service.setServiceID(atoi(serviceResult[0]));
+				service.setServiceID(stringToInteger(serviceResult[0]));
 				service.setHost(serviceResult[1]);
-				service.setPort(atoi(serviceResult[2]));
+				service.setPort(stringToInteger(serviceResult[2]));
 				service.setServiceType(serviceResult[3]);
-				service.setAllowedFails(atoi(serviceResult[4]));
-				service.setMaximumResponse(atoi(serviceResult[5]));
+				service.setAllowedFails(stringToInteger(serviceResult[4]));
+				service.setMaximumResponse(stringToInteger(serviceResult[5]));
 				service.setHostname(serviceResult[6]);
 			}else{
 				// No services have been fetched.
@@ -1316,14 +1325,14 @@ int main(){
 	// Convert strings to int.
 	int port;
 	if(!config[0].empty()){
-		port = atoi(config[0].c_str());
+		port = stringToInteger(config[0].c_str());
 	}else{
 		cout << "Error. Port not set?" << endl;
 		return 0;
 	}
 
 	if(!config[1].empty()){
-		loglevel = atoi(config[1].c_str());
+		loglevel = stringToInteger(config[1].c_str());
 	}else{
 		cout << "Error. Loglevel not set?" << endl;
 		return 0;
@@ -1382,7 +1391,7 @@ int main(){
 
 	// Get MySQL port.
 	if(!config[8].empty() && numOnly(config[8])){
-		dbData.port = atoi(config[8].c_str());
+		dbData.port = stringToInteger(config[8].c_str());
 	}else{
 		cout << "Error. MySQL port not set?" << endl;
 		return 0;
@@ -1391,14 +1400,14 @@ int main(){
 	// Get number of processes to fork.
 	int numProcs = 0;
 	if(!config[9].empty() && numOnly(config[9])){
-		numProcs = atoi(config[9].c_str());
+		numProcs = stringToInteger(config[9].c_str());
 	}else{
 		cout << "Error. Number of processes to fork not set?" << endl;
 		return 0;
 	}
 
 	if(!config[10].empty()){
-		heartbeatPort = atoi(config[10].c_str());
+		heartbeatPort = stringToInteger(config[10].c_str());
 	}else{
 		cout << "Error. Heartbeat port not set?" << endl;
 		return 0;
