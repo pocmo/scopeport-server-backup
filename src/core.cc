@@ -64,7 +64,7 @@ bool clientHandler = 0;
 
 gnutls_anon_server_credentials_t anoncred;
 
-int stringToInteger(string st){
+inline int stringToInteger(string st){
 	int result;
 	if(stringstream(st) >> result){
 		return result;
