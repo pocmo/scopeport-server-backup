@@ -20,10 +20,16 @@
 void Timer::startTimer() {
 	m_timeval = get_tv ();
 }
-   
+
 unsigned int Timer::stopTimer() const {
 	timeval timeval = get_tv ();
-	return ( timeval.tv_sec - m_timeval.tv_sec ) * 1000 + (( timeval.tv_usec - m_timeval.tv_usec ) / 1000);
+	int returnage = ( timeval.tv_sec - m_timeval.tv_sec ) * 1000 + (( timeval.tv_usec - m_timeval.tv_usec ) / 1000);
+
+	// Round the time up to one millisecond if it is zero.
+	if(returnage == 0)
+		returnage = 1;
+
+	return returnage;
 }
 
 const timeval& Timer::get_tv() const {
