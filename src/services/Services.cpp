@@ -336,7 +336,7 @@ void Services::sendWarning(){
 			// Build query for scheduled downtime check.
 			stringstream checkDowntimeQuery;
 			checkDowntimeQuery	<< "SELECT id FROM downtimes"
-									" WHERE service_id = " << serviceID <<
+									" WHERE serviceid = " << serviceID <<
 								   " AND type = 2 AND `from` < " << rawtime <<
 								   " AND `to` > " << rawtime;
 
@@ -451,7 +451,7 @@ bool Services::storeResponseTime(){
 		time_t thistime;
 		time(&thistime);
 
-		queryAllData << "INSERT INTO servicerecords(timestamp, service_id, ms) VALUES('"
+		queryAllData << "INSERT INTO servicerecords(timestamp, serviceid, ms) VALUES('"
 						<< thistime
 						<< "', '"
 						<< serviceID
