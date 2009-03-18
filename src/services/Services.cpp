@@ -169,62 +169,62 @@ int Services::checkService(){
   fcntl(sock, F_SETFL, arg); 
 
 
-		if(serviceType == "none"){
-			// This service needs no protocol check.
-			// Service is running. Check response time.
-			if(!storeResponseTime())
-				log.putLog(2, "008", "Could not update service response time.");
+  if(serviceType == "none"){
+		// This service needs no protocol check.
+  	// Service is running. Check response time.
+		if(!storeResponseTime())
+			log.putLog(2, "008", "Could not update service response time.");
 
-			// Check if the response time is higher than the defined maximum.
-			if(!checkResponseTime()){
-				// This service has a too high response time.
-				updateStatus(2);
-				return 2;
-			}else{
-				// Everything okay.
-				updateStatus(1);
-				return 1;
-			}
-		}else if(serviceType == "smtp"){
-			responseTime = checkSMTP(sock);
-		}else if(serviceType == "http"){
-			responseTime = checkHTTP(sock);
-		}else if(serviceType == "imap"){
-			responseTime = checkIMAP(sock);
-		}else if(serviceType == "pop3"){
-			responseTime = checkPOP3(sock);
-		}else if(serviceType == "ssh"){
-			responseTime = checkSSH(sock);
-		}else if(serviceType == "ftp"){
-			responseTime = checkFTP(sock);
+		// Check if the response time is higher than the defined maximum.
+		if(!checkResponseTime()){
+			// This service has a too high response time.
+			updateStatus(2);
+			return 2;
 		}else{
-			// Unknown service type.
-			close(sock);
-			updateStatus(3);
-			return -1;
+			// Everything okay.
+			updateStatus(1);
+			return 1;
 		}
+	}else if(serviceType == "smtp"){
+		responseTime = checkSMTP(sock);
+	}else if(serviceType == "http"){
+		responseTime = checkHTTP(sock);
+	}else if(serviceType == "imap"){
+		responseTime = checkIMAP(sock);
+	}else if(serviceType == "pop3"){
+		responseTime = checkPOP3(sock);
+	}else if(serviceType == "ssh"){
+		responseTime = checkSSH(sock);
+	}else if(serviceType == "ftp"){
+		responseTime = checkFTP(sock);
+	}else{
+		// Unknown service type.
+		close(sock);
+		updateStatus(3);
+		return -1;
+	}
 
-		if(responseTime > 0){
-			// Service is running. Check response time.
-			if(!storeResponseTime())
-				log.putLog(2, "003", "Could not update service response time.");
-			// Check if the response time is higher than the defined maximum.
-			if(!checkResponseTime()){
-				// This service has a too high response time.
-				close(sock);
-				updateStatus(2);
-				return 2;
-			}else{
-				// Everything okay.
-				close(sock);
-				updateStatus(1);
-				return 1;
-			}
-		}else{
+	if(responseTime > 0){
+		// Service is running. Check response time.
+		if(!storeResponseTime())
+			log.putLog(2, "003", "Could not update service response time.");
+		// Check if the response time is higher than the defined maximum.
+		if(!checkResponseTime()){
+			// This service has a too high response time.
 			close(sock);
-			updateStatus(0);
-			return 0;
+			updateStatus(2);
+			return 2;
+		}else{
+			// Everything okay.
+			close(sock);
+			updateStatus(1);
+			return 1;
 		}
+	}else{
+		close(sock);
+		updateStatus(0);
+		return 0;
+	}
 
 	close(sock);
 	return -1;
