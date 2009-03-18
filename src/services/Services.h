@@ -35,7 +35,9 @@ class Services : public Database {
 		unsigned int	allowedFails;
 		unsigned int	responseTime;
 		unsigned int	maximumResponse;
-		string 			host;
+    unsigned int  timeout;
+
+    string 			host;
 		string 			serviceType;
 		string			notiGroup;
 		string			hostname;
@@ -52,10 +54,12 @@ class Services : public Database {
 		void setServiceType(string serviceType);
 		void setNotiGroup(string notiGroup);
 		void setHostname(string hostname);
+    void setTimeout(unsigned int timeout);
 
 		unsigned int getServiceID();
 		unsigned int getHandlerID();
 		unsigned int getMaximumResponse();
+    unsigned int getTimeout();
 
 		int checkService();
 

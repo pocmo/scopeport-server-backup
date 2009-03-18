@@ -1,6 +1,6 @@
 // This file is part of ScopePort (Linux server).
 //
-// Copyright 2007, 2008 Lennart Koopmann
+// Copyright 2007, 2008, 2009 Lennart Koopmann
 //
 // ScopePort (Linux server) is free software: you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as published by
@@ -38,6 +38,7 @@
 #include <netinet/ether.h>
 #include <sys/file.h>
 #include <netdb.h>
+#include <errno.h>
 
 // MySQL.
 #include <mysql.h>

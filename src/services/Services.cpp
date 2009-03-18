@@ -30,6 +30,7 @@ Services::Services(mySQLData myDBData, unsigned int myHandlerID)
 	dbData = myDBData;
 	handlerID = myHandlerID;
 	responseTime = 0;
+  timeout = 0;
 }
 
 void Services::setServiceID(unsigned int x){
@@ -76,6 +77,14 @@ unsigned int Services::getMaximumResponse(){
 	return maximumResponse;
 }
 
+unsigned int Services::getTimeout(){
+  return timeout;
+}
+
+void Services::setTimeout(unsigned int myTimeout){
+  timeout = myTimeout;
+}
+
 int Services::checkService(){
 	Log log(LOGFILE, dbData);
 	int sock;
@@ -107,20 +116,59 @@ int Services::checkService(){
 
 	sleep(1);
 
+  // Set socket to non-blocking.
+  long arg;
+  arg = fcntl(sock, F_GETFL, NULL); 
+  arg |= O_NONBLOCK; 
+  fcntl(sock, F_SETFL, arg);
+
 	// Connect and measure time it takes to connect.
 	Timer t;
 	t.startTimer();
 	int res = connect(sock, (struct sockaddr *) &server, sizeof server);
 	responseTime = t.stopTimer();
 
+  int valopt; 
+  struct sockaddr_in addr; 
+  fd_set myset; 
+  struct timeval tv; 
+  socklen_t lon; 
+
 	if(res < 0) {
-		// Could not connect. - Service not running.
-		close(sock);
-		responseTime = 0;
-		updateStatus(0);
-		return 0;
-	}else{
-		// Connection successful! Service is running.
+    if(errno == EINPROGRESS){
+      tv.tv_sec = getTimeout(); 
+      tv.tv_usec = 0; 
+      FD_ZERO(&myset); 
+      FD_SET(sock, &myset); 
+      if(select(sock+1, NULL, &myset, NULL, &tv) > 0){
+        lon = sizeof(int); 
+        getsockopt(sock, SOL_SOCKET, SO_ERROR, (void*)(&valopt), &lon); 
+        if(valopt){
+          // Error.
+          updateStatus(0);
+			    close(sock);
+          return 0;
+        }
+      }else{
+        // Timeout.
+        updateStatus(0);
+			  close(sock);
+        return 0;
+      }
+    }else{
+      // Error on connect.
+      updateStatus(0);
+			close(sock);
+      return 0;
+    }
+  }
+
+  // We are connected! Set socket back to blocking mode.
+  arg = fcntl(sock, F_GETFL, NULL); 
+  arg &= (~O_NONBLOCK); 
+  fcntl(sock, F_SETFL, arg); 
+
+
 		if(serviceType == "none"){
 			// This service needs no protocol check.
 			// Service is running. Check response time.
@@ -177,8 +225,6 @@ int Services::checkService(){
 			updateStatus(0);
 			return 0;
 		}
-
-	}
 
 	close(sock);
 	return -1;

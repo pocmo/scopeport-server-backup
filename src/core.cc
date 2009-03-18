@@ -179,7 +179,7 @@ void* serviceHandler(void* arg){
 	// Try to establish a database connection.
 	if(db.initConnection()){
 		// Fetch a service to handle.
-		string query = "SELECT id, host, port, service_type, allowed_fails, maxres, host FROM services "
+		string query = "SELECT id, host, port, service_type, allowed_fails, maxres, host, timeout FROM services "
 				"WHERE handler = 0 AND disabled = 0 LIMIT 1";
 		if(mysql_real_query(db.getHandle(), query.c_str(), strlen(query.c_str())) == 0){
 			// Query successful.
@@ -202,6 +202,7 @@ void* serviceHandler(void* arg){
 				service.setAllowedFails(stringToInteger(serviceResult[4]));
 				service.setMaximumResponse(stringToInteger(serviceResult[5]));
 				service.setHostname(serviceResult[6]);
+        service.setTimeout(stringToInteger(serviceResult[7]));
 			}else{
 				// No services have been fetched.
 				mysql_free_result(res);
