@@ -25,6 +25,12 @@
 #include "../database/Information.h"
 #include "../misc/Timer.h"
 
+#define STATE_CONFAIL 0
+#define STATE_OKAY 1
+#define STATE_OKAYTIME 2
+#define STATE_INTERR 3
+#define STATE_TIMEOUT 4
+
 Services::Services(mySQLData myDBData, unsigned int myHandlerID)
 			: Database(myDBData){
 	dbData = myDBData;
@@ -96,7 +102,7 @@ int Services::checkService(){
 	if(sock < 0){
 		// Creating socket failed.
 		close(sock);
-		updateStatus(3);
+		updateStatus(STATE_INTERR);
 		return -1;
 	}
 
@@ -106,15 +112,13 @@ int Services::checkService(){
 	if(host==(struct hostent *) 0){
 		// Host unknown.
 		close(sock);
-		updateStatus(0);
+		updateStatus(STATE_CONFAIL);
 		return 0;
 	}
 
 	// Connect to defined port.
 	memcpy((char *) &server.sin_addr, (char *) host->h_addr, host->h_length);
 	server.sin_port=htons(port);
-
-	sleep(1);
 
   // Set socket to non-blocking.
   long arg;
@@ -145,19 +149,19 @@ int Services::checkService(){
         getsockopt(sock, SOL_SOCKET, SO_ERROR, (void*)(&valopt), &lon); 
         if(valopt){
           // Error.
-          updateStatus(0);
+          updateStatus(STATE_INTERR);
 			    close(sock);
           return 0;
         }
       }else{
         // Timeout.
-        updateStatus(0);
+        updateStatus(STATE_TIMEOUT);
 			  close(sock);
         return 0;
       }
     }else{
       // Error on connect.
-      updateStatus(0);
+      updateStatus(STATE_CONFAIL);
 			close(sock);
       return 0;
     }
@@ -178,11 +182,11 @@ int Services::checkService(){
 		// Check if the response time is higher than the defined maximum.
 		if(!checkResponseTime()){
 			// This service has a too high response time.
-			updateStatus(2);
+			updateStatus(STATE_OKAYTIME);
 			return 2;
 		}else{
 			// Everything okay.
-			updateStatus(1);
+			updateStatus(STATE_OKAY);
 			return 1;
 		}
 	}else if(serviceType == "smtp"){
@@ -200,7 +204,7 @@ int Services::checkService(){
 	}else{
 		// Unknown service type.
 		close(sock);
-		updateStatus(3);
+		updateStatus(STATE_INTERR);
 		return -1;
 	}
 
@@ -212,17 +216,17 @@ int Services::checkService(){
 		if(!checkResponseTime()){
 			// This service has a too high response time.
 			close(sock);
-			updateStatus(2);
+			updateStatus(STATE_OKAYTIME);
 			return 2;
 		}else{
 			// Everything okay.
 			close(sock);
-			updateStatus(1);
+			updateStatus(STATE_OKAY);
 			return 1;
 		}
 	}else{
 		close(sock);
-		updateStatus(0);
+		updateStatus(STATE_CONFAIL);
 		return 0;
 	}
 
@@ -261,7 +265,7 @@ bool Services::checkResponseTime(){
 
 		stringstream query;
 		query	<< "SELECT maxres FROM services WHERE id = "
-				<< serviceID;
+		      << serviceID;
 
 		setMaximumResponse(stringToInteger(sGetQuery(query.str()).c_str()));
 
