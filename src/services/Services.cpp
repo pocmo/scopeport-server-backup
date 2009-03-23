@@ -373,7 +373,6 @@ void Services::sendWarning(){
 						<< " on Port "
 						<< port
 						<< ") timed out.";
-			qms = responseTime;
     }else{
 			// It is a "normal" failed service.
 			warningSubj << "Warning! Service \""
@@ -387,7 +386,6 @@ void Services::sendWarning(){
 						<< " on Port "
 						<< port
 						<< ") seems to have failed!";
-			qms = 0;
     }
 
 		string lastWarn;
