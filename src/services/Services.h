@@ -36,6 +36,7 @@ class Services : public Database {
 		unsigned int	responseTime;
 		unsigned int	maximumResponse;
     unsigned int  timeout;
+    unsigned int  m_status;
 
     string 			host;
 		string 			serviceType;

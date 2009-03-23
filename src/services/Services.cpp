@@ -151,13 +151,13 @@ int Services::checkService(){
           // Error.
           updateStatus(STATE_INTERR);
 			    close(sock);
-          return 0;
+          return -1;
         }
       }else{
         // Timeout.
         updateStatus(STATE_TIMEOUT);
 			  close(sock);
-        return 0;
+        return 4;
       }
     }else{
       // Error on connect.
@@ -235,6 +235,8 @@ int Services::checkService(){
 }
 
 void Services::updateStatus(int status){
+  m_status = status;
+
 	Database db(dbData);
 	Log log(LOGFILE, dbData);
 	if(db.initConnection()){
@@ -342,21 +344,7 @@ void Services::sendWarning(){
 
 		int qms = 0;
 
-		if(responseTime == 0){
-			// It is a "normal" failed service.
-			warningSubj << "Warning! Service \""
-						<< serviceName
-						<< "\" seems to have failed!";
-
-			warningMsg	<< "Warning! Service \""
-						<< serviceName
-						<< "\" ("
-						<< hostname
-						<< " on Port "
-						<< port
-						<< ") seems to have failed!";
-			qms = 0;
-		}else{
+    if(m_status == 1){
 			// It is a warning for a too high response time.
 			warningSubj << "Warning! Service \""
 						<< serviceName
@@ -372,7 +360,35 @@ void Services::sendWarning(){
 						<< responseTime
 						<< "ms\"!";
 			qms = responseTime;
-		}
+		}else if(m_status == 4){
+      // It is a warning for a timed out service.
+			warningSubj << "Warning! Service \""
+						<< serviceName
+						<< "\" timed out!";
+
+			warningMsg	<< "Warning! Service \""
+						<< serviceName
+						<< "\" ("
+						<< hostname
+						<< " on Port "
+						<< port
+						<< ") timed out.";
+			qms = responseTime;
+    }else{
+			// It is a "normal" failed service.
+			warningSubj << "Warning! Service \""
+						<< serviceName
+						<< "\" seems to have failed!";
+
+			warningMsg	<< "Warning! Service \""
+						<< serviceName
+						<< "\" ("
+						<< hostname
+						<< " on Port "
+						<< port
+						<< ") seems to have failed!";
+			qms = 0;
+    }
 
 		string lastWarn;
 		lastWarn = sGetQuery(Information::getLastServiceWarn(serviceID));
@@ -422,12 +438,14 @@ void Services::sendWarning(){
 
 				// Insert warning into database.
 				stringstream alarmSQL;
-				alarmSQL	<< "INSERT INTO alarms (alarm_type, timestamp, service_id, ms) VALUES ('2','"
+				alarmSQL	<< "INSERT INTO alarms (alarm_type, timestamp, service_id, ms, service_state) VALUES ('2','"
 							<< alarmtime
 							<< "','"
 							<< serviceID
 							<< "','"
 							<< qms
+							<< "','"
+							<< m_status
 							<< "')";
 
 				if(!setQuery(getHandle(), alarmSQL.str()))

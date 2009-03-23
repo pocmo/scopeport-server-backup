@@ -266,11 +266,11 @@ void* serviceHandler(void* arg){
 
 		int serviceResult = service.checkService();
 
-		if(serviceResult > 0){
+		if(serviceResult == 0 || serviceResult == 2 || serviceResult == 4){
 			/*
        * Check succeeded.
        *
-			 * The service is okay, down, timed out or has a too high response time.
+			 * The service is down, timed out or has a too high response time.
 			 * The method will find out if the response time was too high
 			 * or if the service is just down/not reachable.
 			 */
