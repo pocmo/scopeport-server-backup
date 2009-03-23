@@ -266,9 +266,11 @@ void* serviceHandler(void* arg){
 
 		int serviceResult = service.checkService();
 
-		if(serviceResult == 0 || serviceResult == 2){
+		if(serviceResult > 0){
 			/*
-			 * The service is down or has a too high response time.
+       * Check succeeded.
+       *
+			 * The service is okay, down, timed out or has a too high response time.
 			 * The method will find out if the response time was too high
 			 * or if the service is just down/not reachable.
 			 */
@@ -282,7 +284,8 @@ void* serviceHandler(void* arg){
 			gn.sendMessages("Critical failure", "Could not check service because an "
 					"internal error occured");
 		}
-		// The service is online and responded fast enough. Wait 60 seconds until next check.
+
+		// Wait 60 seconds until next check.
 		sleep(60);
 	}
 
