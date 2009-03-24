@@ -262,11 +262,49 @@ void* serviceHandler(void* arg){
 			return arg;
 		}
 
-		// Check service now.
+		// Check service twice and build an average response time.
+    int serviceResult = -1;
+    int firstServiceResult = -1;
+    int secondServiceResult = -1;
+    for(int run = 0; run <= 1; run++){
+		  serviceResult = service.checkService(run);
+      if(run == 0){
+        firstServiceResult = serviceResult;
+      }else{
+        secondServiceResult = serviceResult;
+      }
+    }
 
-		int serviceResult = service.checkService();
+    /*
+     * Start the whole procedure again if the first and the second
+     * serviceResult are not equal because this is most probably
+     * a mismeasurement.
+     */
+    if(firstServiceResult != secondServiceResult){
+      sleep(5);
+      continue;
+    }
 
-		if(serviceResult == 0 || serviceResult == 2 || serviceResult == 4){
+    // Update the service status.
+    service.updateStatus(serviceResult);
+
+    // Find out if the response time was too high.
+    if(service.checkResponseTime() == 0){
+      // Mark service with "Too high response time"
+      serviceResult = SERVICE_STATE_OKAYTIME;
+    }
+
+    // Store the response time in the database.
+    if(!service.storeResponseTime()){
+      // Could not store the response time.
+      log.putLog(2, "008", "Could not update service response time. Retry in 30 seconds.");
+      service.updateStatus(SERVICE_STATE_INTERR);
+      sleep(30);
+      continue;
+    }
+
+		if(serviceResult == SERVICE_STATE_CONFAIL || serviceResult == SERVICE_STATE_OKAYTIME
+                    || serviceResult == SERVICE_STATE_TIMEOUT){
 			/*
        * Check succeeded.
        *

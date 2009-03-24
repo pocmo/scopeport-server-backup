@@ -33,6 +33,8 @@ class Services : public Database {
 		unsigned int	serviceID;
 		unsigned int	port;
 		unsigned int	allowedFails;
+		unsigned int	m_responseTime1;
+		unsigned int	m_responseTime2;
 		unsigned int	responseTime;
 		unsigned int	maximumResponse;
     unsigned int  timeout;
@@ -62,7 +64,7 @@ class Services : public Database {
 		unsigned int getMaximumResponse();
     unsigned int getTimeout();
 
-		int checkService();
+		int checkService(int run);
 
 		void updateStatus(int status);
 
@@ -71,6 +73,8 @@ class Services : public Database {
 		 * \returns True if the response time is in range, false if not.
 		 */
 		bool checkResponseTime();
+
+    bool buildAverageResponseTime();
 
 		//! Sends warning if service has failed
 		void sendWarning();

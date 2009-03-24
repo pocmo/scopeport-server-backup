@@ -28,7 +28,7 @@
 #define STATE_CONFAIL 0
 #define STATE_OKAY 1
 #define STATE_OKAYTIME 2
-#define STATE_INTERR 3
+#define STATE_INTERR -1
 #define STATE_TIMEOUT 4
 
 Services::Services(mySQLData myDBData, unsigned int myHandlerID)
@@ -36,6 +36,8 @@ Services::Services(mySQLData myDBData, unsigned int myHandlerID)
 	dbData = myDBData;
 	handlerID = myHandlerID;
 	responseTime = 0;
+	m_responseTime1 = 0;
+	m_responseTime2 = 0;
   timeout = 0;
 }
 
@@ -91,19 +93,28 @@ void Services::setTimeout(unsigned int myTimeout){
   timeout = myTimeout;
 }
 
-int Services::checkService(){
+int Services::checkService(int run){
 	Log log(LOGFILE, dbData);
 	int sock;
 	struct sockaddr_in server;
 	struct hostent *host;
+
+  /* Store the response time of the first run in responseTime1
+   * and the second run in responseTime2.
+   */
+  unsigned int *p_responseTime;
+  if(run == 1){
+    p_responseTime = &m_responseTime1;
+  }else{
+    p_responseTime = &m_responseTime2;
+  }
 
 	// Create socket.
 	sock = socket(AF_INET, SOCK_STREAM, 0);
 	if(sock < 0){
 		// Creating socket failed.
 		close(sock);
-		updateStatus(STATE_INTERR);
-		return -1;
+		return SERVICE_STATE_INTERR;
 	}
 
 	// Verify host.
@@ -112,8 +123,7 @@ int Services::checkService(){
 	if(host==(struct hostent *) 0){
 		// Host unknown.
 		close(sock);
-		updateStatus(STATE_CONFAIL);
-		return 0;
+		return SERVICE_STATE_CONFAIL;
 	}
 
 	// Connect to defined port.
@@ -130,7 +140,7 @@ int Services::checkService(){
 	Timer t;
 	t.startTimer();
 	int res = connect(sock, (struct sockaddr *) &server, sizeof server);
-	responseTime = t.stopTimer();
+	*p_responseTime = t.stopTimer();
 
   int valopt; 
   struct sockaddr_in addr; 
@@ -149,21 +159,18 @@ int Services::checkService(){
         getsockopt(sock, SOL_SOCKET, SO_ERROR, (void*)(&valopt), &lon); 
         if(valopt){
           // Error.
-          updateStatus(STATE_INTERR);
 			    close(sock);
-          return -1;
+          return SERVICE_STATE_INTERR;
         }
       }else{
         // Timeout.
-        updateStatus(STATE_TIMEOUT);
 			  close(sock);
-        return 4;
+        return SERVICE_STATE_TIMEOUT;
       }
     }else{
       // Error on connect.
-      updateStatus(STATE_CONFAIL);
 			close(sock);
-      return 0;
+      return SERVICE_STATE_CONFAIL;
     }
   }
 
@@ -175,63 +182,38 @@ int Services::checkService(){
 
   if(serviceType == "none"){
 		// This service needs no protocol check.
-  	// Service is running. Check response time.
-		if(!storeResponseTime())
-			log.putLog(2, "008", "Could not update service response time.");
-
-		// Check if the response time is higher than the defined maximum.
-		if(!checkResponseTime()){
-			// This service has a too high response time.
-			updateStatus(STATE_OKAYTIME);
-			return 2;
-		}else{
-			// Everything okay.
-			updateStatus(STATE_OKAY);
-			return 1;
-		}
+  	// Service is running if we arrived here.
+	  return SERVICE_STATE_OKAY;
 	}else if(serviceType == "smtp"){
-		responseTime = checkSMTP(sock);
+		*p_responseTime = checkSMTP(sock);
 	}else if(serviceType == "http"){
-		responseTime = checkHTTP(sock);
+		*p_responseTime = checkHTTP(sock);
 	}else if(serviceType == "imap"){
-		responseTime = checkIMAP(sock);
+		*p_responseTime = checkIMAP(sock);
 	}else if(serviceType == "pop3"){
-		responseTime = checkPOP3(sock);
+		*p_responseTime = checkPOP3(sock);
 	}else if(serviceType == "ssh"){
-		responseTime = checkSSH(sock);
+		*p_responseTime = checkSSH(sock);
 	}else if(serviceType == "ftp"){
-		responseTime = checkFTP(sock);
+		*p_responseTime = checkFTP(sock);
 	}else{
 		// Unknown service type.
 		close(sock);
-		updateStatus(STATE_INTERR);
-		return -1;
+		return SERVICE_STATE_INTERR;
 	}
 
-	if(responseTime > 0){
-		// Service is running. Check response time.
-		if(!storeResponseTime())
-			log.putLog(2, "003", "Could not update service response time.");
-		// Check if the response time is higher than the defined maximum.
-		if(!checkResponseTime()){
-			// This service has a too high response time.
-			close(sock);
-			updateStatus(STATE_OKAYTIME);
-			return 2;
-		}else{
-			// Everything okay.
-			close(sock);
-			updateStatus(STATE_OKAY);
-			return 1;
-		}
-	}else{
-		close(sock);
-		updateStatus(STATE_CONFAIL);
-		return 0;
-	}
+  close(sock);
 
-	close(sock);
-	return -1;
+  // The service is running if we arrived here.
+	return SERVICE_STATE_OKAY;
+}
+
+bool Services::buildAverageResponseTime(){
+  // Return false if the difference is too high.
+  
+  // Build the average response time.
+  responseTime = (m_responseTime1 + m_responseTime2)/2;
+  return 1;
 }
 
 void Services::updateStatus(int status){
@@ -257,8 +239,9 @@ void Services::updateStatus(int status){
 }
 
 bool Services::checkResponseTime(){
-	if(responseTime == 0)
-		return 1;
+
+  // Build the average response time.
+  buildAverageResponseTime();
 
 	// Initialize database connection.
 	if(initConnection()){
@@ -509,7 +492,11 @@ void Services::sendWarning(){
 }
 
 bool Services::storeResponseTime(){
-	// Initialize database connection.
+
+  // Build the average response time.
+  buildAverageResponseTime();
+	
+  // Initialize database connection.
 	if(initConnection()){
 		stringstream queryLastData;
 		stringstream queryAllData;

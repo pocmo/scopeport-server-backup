@@ -158,4 +158,11 @@ bool numOnly(string checkMe);
 #define XMPP_STREAM_ERROR 1
 #define XMPP_GENERAL_ERROR 2
 
+// Service states
+#define SERVICE_STATE_CONFAIL 0
+#define SERVICE_STATE_OKAY 1
+#define SERVICE_STATE_OKAYTIME 2
+#define SERVICE_STATE_INTERR -1
+#define SERVICE_STATE_TIMEOUT 4
+
 #endif /*INTERNAL_H_*/
