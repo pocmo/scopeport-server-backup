@@ -1279,7 +1279,7 @@ void logTLS(int level, const char *message){
 	log.putLog(1, "TLS", message);
 }
 
-int main(){
+int main(int argc, char *argv[]){
 
 	// So jung kommen wir nicht mehr zusammen.
 
@@ -1287,6 +1287,15 @@ int main(){
 	if(geteuid() != 0){
 		cout <<  "The server needs to be started as root." << endl;
 		return 0;
+	}
+
+  bool debug = 0;
+  
+  // Find out if we are in debug mode.
+  for(int i = 0; i < argc; i++){
+		if(strcmp(argv[i], "--debug") == 0){
+			debug = 1;
+		}
 	}
 
 	// Check if config file is readable
@@ -1535,11 +1544,13 @@ int main(){
 
 	Log log(LOGFILE, dbData);
 
-	// Start as daemon!
-	if(daemon(0,0) < 0){
-		cout << "Terminated. Could not initialize daemon mode!" << endl;
-		return 0;
-	}
+	// Start as daemon if we are not in debug mode.
+  if(!debug){
+  	if(daemon(0,0) < 0){
+  		cout << "Terminated. Could not initialize daemon mode!" << endl;
+  		return 0;
+  	}
+  }
 
 	// We are a daemon from here on.
 
