@@ -48,7 +48,6 @@ class Services : public Database {
 	public:
 		Services(mySQLData myDBData, unsigned int myHandlerID);
 
-
 		void setServiceID(unsigned int serviceID);
 		void setAllowedFails(unsigned int allowedFails);
 		void setPort(unsigned int port);
@@ -63,6 +62,8 @@ class Services : public Database {
 		unsigned int getHandlerID();
 		unsigned int getMaximumResponse();
     unsigned int getTimeout();
+
+    bool updateSettings();
 
 		int checkService(int run);
 

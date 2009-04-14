@@ -179,30 +179,33 @@ void* serviceHandler(void* arg){
 	// Try to establish a database connection.
 	if(db.initConnection()){
 		// Fetch a service to handle.
-		string query = "SELECT id, host, port, service_type, allowed_fails, maxres, host, timeout FROM services "
-				"WHERE handler = 0 AND disabled = 0 LIMIT 1";
+    string query = "SELECT id FROM services WHERE handler = 0 AND disabled = 0 LIMIT 1";
 		if(mysql_real_query(db.getHandle(), query.c_str(), strlen(query.c_str())) == 0){
 			// Query successful.
 			MYSQL_ROW serviceResult;
 			MYSQL_RES* res = mysql_store_result(db.getHandle());
 			serviceResult = mysql_fetch_row(res);
 			if(mysql_num_rows(res) > 0){
-				// TODO: Do this for all results. Return arg if any field is NULL.
+        // We fetched a service to handle.
 				if(serviceResult[0] == NULL){
 					// We got NULL fields.
 					mysql_free_result(res);
 					mysql_close(db.getHandle());
 					return arg;
 				}
-				// A service has been fetched. TODO: Create service object here and pass data to constructor.
-				service.setServiceID(stringToInteger(serviceResult[0]));
-				service.setHost(serviceResult[1]);
-				service.setPort(stringToInteger(serviceResult[2]));
-				service.setServiceType(serviceResult[3]);
-				service.setAllowedFails(stringToInteger(serviceResult[4]));
-				service.setMaximumResponse(stringToInteger(serviceResult[5]));
-				service.setHostname(serviceResult[6]);
-        service.setTimeout(stringToInteger(serviceResult[7]));
+				
+        // Tell the service object it's own ID.
+        service.setServiceID(stringToInteger(serviceResult[0]));
+
+        // Initially fill with settings. This will be repeated before every check.
+        if(!service.updateSettings()){
+          // Could not store the response time.
+          log.putLog(2, "xxx", "Could not initially set service settings.");
+          service.updateStatus(SERVICE_STATE_INTERR);
+					mysql_free_result(res);
+					mysql_close(db.getHandle());
+					return arg;
+        }
 			}else{
 				// No services have been fetched.
 				mysql_free_result(res);
@@ -262,10 +265,19 @@ void* serviceHandler(void* arg){
 			return arg;
 		}
 
+    // Update settings.
+    if(!service.updateSettings()){
+      // Could not store the response time.
+      log.putLog(2, "xxx", "Could not update service settings. Retry in 30 seconds.");
+      service.updateStatus(SERVICE_STATE_INTERR);
+      sleep(30);
+      continue;
+    }
+
 		// Check service twice and build an average response time.
-    int serviceResult = -1;
-    int firstServiceResult = -1;
-    int secondServiceResult = -1;
+    int serviceResult = SERVICE_STATE_INTERR;
+    int firstServiceResult = SERVICE_STATE_INTERR;
+    int secondServiceResult = SERVICE_STATE_INTERR;
     for(int run = 0; run <= 1; run++){
 		  serviceResult = service.checkService(run);
       if(run == 0){
@@ -285,14 +297,14 @@ void* serviceHandler(void* arg){
       continue;
     }
 
-    // Update the service status.
-    service.updateStatus(serviceResult);
-
     // Find out if the response time was too high.
     if(service.checkResponseTime() == 0){
       // Mark service with "Too high response time"
       serviceResult = SERVICE_STATE_OKAYTIME;
     }
+
+    // Update the service status.
+    service.updateStatus(serviceResult);
 
     // Store the response time in the database.
     if(!service.storeResponseTime()){
@@ -313,7 +325,7 @@ void* serviceHandler(void* arg){
 			 * or if the service is just down/not reachable.
 			 */
 			service.sendWarning();
-		}else if(serviceResult < 0){
+		}else if(serviceResult == SERVICE_STATE_INTERR){
 			/*
 			 * The service could not be checked because an internal error occured.
 			 * Send a general warning!

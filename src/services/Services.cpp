@@ -25,15 +25,10 @@
 #include "../database/Information.h"
 #include "../misc/Timer.h"
 
-#define STATE_CONFAIL 0
-#define STATE_OKAY 1
-#define STATE_OKAYTIME 2
-#define STATE_INTERR -1
-#define STATE_TIMEOUT 4
-
 Services::Services(mySQLData myDBData, unsigned int myHandlerID)
 			: Database(myDBData){
 	dbData = myDBData;
+  serviceID = 0;
 	handlerID = myHandlerID;
 	responseTime = 0;
 	m_responseTime1 = 0;
@@ -93,6 +88,50 @@ void Services::setTimeout(unsigned int myTimeout){
   timeout = myTimeout;
 }
 
+bool Services::updateSettings(){
+  // Return false if the service id has not been set yet.
+  if(serviceID == 0){
+    return 0;
+  }
+
+	if(initConnection()){
+		stringstream query;
+    query << "SELECT host, port, service_type, allowed_fails, maxres, host, timeout FROM services "
+				     "WHERE id = "
+          << getServiceID();
+		if(mysql_real_query(getHandle(), query.str().c_str(), strlen(query.str().c_str())) == 0){
+			// Query successful.
+			MYSQL_ROW serviceResult;
+			MYSQL_RES* res = mysql_store_result(getHandle());
+			serviceResult = mysql_fetch_row(res);
+			if(mysql_num_rows(res) > 0){
+        // We fetched the service to update. Update!
+				setHost(serviceResult[0]);
+				setPort(stringToInteger(serviceResult[1]));
+				setServiceType(serviceResult[2]);
+				setAllowedFails(stringToInteger(serviceResult[3]));
+				setMaximumResponse(stringToInteger(serviceResult[4]));
+				setHostname(serviceResult[5]);
+        setTimeout(stringToInteger(serviceResult[6]));
+
+        // Clean up.
+				mysql_free_result(res);
+				mysql_close(getHandle());
+
+        // Great success. </borat>
+        return 1;
+      }else{
+        // Could not find service with specified ID.
+				mysql_free_result(res);
+				mysql_close(getHandle());
+      }
+    }
+  }
+
+  // Could not connect to database or no serviwe with specified ID was found.
+  return 0;
+}
+
 int Services::checkService(int run){
 	Log log(LOGFILE, dbData);
 	int sock;
@@ -148,7 +187,7 @@ int Services::checkService(int run){
   struct timeval tv; 
   socklen_t lon; 
 
-	if(res < 0) {
+	if(res < 0){
     if(errno == EINPROGRESS){
       tv.tv_sec = getTimeout(); 
       tv.tv_usec = 0; 
@@ -157,10 +196,10 @@ int Services::checkService(int run){
       if(select(sock+1, NULL, &myset, NULL, &tv) > 0){
         lon = sizeof(int); 
         getsockopt(sock, SOL_SOCKET, SO_ERROR, (void*)(&valopt), &lon); 
-        if(valopt){
+        if(valopt != 0){
           // Error.
 			    close(sock);
-          return SERVICE_STATE_INTERR;
+          return SERVICE_STATE_CONFAIL;
         }
       }else{
         // Timeout.
@@ -221,7 +260,7 @@ void Services::updateStatus(int status){
 
 	Database db(dbData);
 	Log log(LOGFILE, dbData);
-	if(db.initConnection()){
+	if(initConnection()){
 		time_t rawtime;
 		stringstream query;
 		query	<< "UPDATE services SET state = "
@@ -230,11 +269,11 @@ void Services::updateStatus(int status){
 				<< time(&rawtime)
 				<< " WHERE id = "
 				<< serviceID;
-		db.setQuery(db.getHandle(), query.str());
-		mysql_close(db.getHandle());
+		setQuery(getHandle(), query.str());
+		mysql_close(getHandle());
 	}else{
 		log.putLog(2, "4000", "Could not update status of service");
-		mysql_close(db.getHandle());
+		mysql_close(getHandle());
 	}
 }
 
@@ -327,7 +366,7 @@ void Services::sendWarning(){
 
 		int qms = 0;
 
-    if(m_status == 1){
+    if(m_status == 2){
 			// It is a warning for a too high response time.
 			warningSubj << "Warning! Service \""
 						<< serviceName
