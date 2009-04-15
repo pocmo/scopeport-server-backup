@@ -501,10 +501,10 @@ void Services::sendWarning(){
 					}
 				}
 
+
 				if(mobilecData.doMobileC && mailData.doMailing){
 					vector<string> mobilecRecvList = Information::getMobileCWarningReceivers(getHandle(),
 							sGetQuery(Information::getServiceReceiverGroup(serviceID)), "4");
-
 					int mobilecRecvCount = 0;
 					int mobilecRecvListSize = mobilecRecvList.size();
 					while(mobilecRecvCount < mobilecRecvListSize){

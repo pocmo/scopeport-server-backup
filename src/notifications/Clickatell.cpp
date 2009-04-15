@@ -24,7 +24,7 @@ mobilecData Clickatell::fetchSettings(mySQLData dbData){
 
   Database db(dbData);
   if(db.initConnection()){
-    const char* getSettingsSQL = "SELECT doMobileClickatell, mobilecUsername, mobilecPassword"
+    const char* getSettingsSQL = "SELECT doMobileClickatell, mobilecUsername, mobilecPassword,"
                                 "mobilecAPIID FROM settings";
     if(mysql_real_query(db.getHandle(), getSettingsSQL, strlen(getSettingsSQL)) == 0){
       MYSQL_RES* res;
@@ -50,7 +50,7 @@ mobilecData Clickatell::fetchSettings(mySQLData dbData){
 
           // mobilecPassword
           if(row[2] != NULL){
-            clickatell.username = row[2];
+            clickatell.password = row[2];
           }
 
           // mobilecPassword
@@ -74,7 +74,7 @@ mobilecData Clickatell::fetchSettings(mySQLData dbData){
     mysql_close(db.getHandle());
   }else{
     // Could not connect to DB. Disable.
-	clickatell.doMobileC = 0;
+	  clickatell.doMobileC = 0;
   }
 
   return clickatell;
