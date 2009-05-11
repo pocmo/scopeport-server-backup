@@ -21,8 +21,6 @@
 #include "database/Database.h"
 // Authentication handling.
 #include "conversation/Auth.h"
-// The fallback methods.
-#include "fallback/Fallback.h"
 // Host blacklist.
 #include "conversation/Blacklist.h"
 // Services.
@@ -54,9 +52,6 @@ mySQLData dbData;
 mailingData mailData;
 XMPPData xmppData;
 mobilecData clickatellData;
-
-bool fallbackActive = 0;
-bool fallbackMode = 0;
 
 int heartbeatPort = 0;
 
@@ -437,11 +432,6 @@ void* onlineStateChecks(void* arg){
 	// Give the clients some time to send data.
 	sleep(180);
 
-	if(fallbackMode){
-		while(!fallbackActive)
-			sleep(1000);
-	}
-
 	Database db(dbData);
 	Log log(LOGFILE, dbData);
 
@@ -655,11 +645,6 @@ long double packageCountERR = 0;
 
 void* maintenanceThread(void* args){
 
-	if(fallbackMode){
-		while(!fallbackActive)
-			sleep(1000);
-	}
-
 	Log log(LOGFILE, dbData);
 
 	while(1){
@@ -757,11 +742,6 @@ void killClient(int sig){
 }
 
 void handleClient(){
-
-	if(fallbackMode){
-		while(!fallbackActive)
-			sleep(1000);
-	}
 
 	// Start maintenance thread.
 	pthread_t maintThread;
@@ -1344,9 +1324,6 @@ int main(int argc, char *argv[]){
 
 	parameters.push_back("numprocs");
 
-	parameters.push_back("heartbeatport");
-	parameters.push_back("fallback");
-
 	parameters.push_back("mail-alt");
 	parameters.push_back("xmpp-alt");
 	parameters.push_back("mobilec-alt");
@@ -1469,29 +1446,10 @@ int main(int argc, char *argv[]){
 		return 0;
 	}
 
-	if(!config[10].empty()){
-		heartbeatPort = stringToInteger(config[10].c_str());
-	}else{
-		cout << "Error. Heartbeat port not set?" << endl;
-		return 0;
-	}
-
-	// Find out if this is a fallback server.
-	if(!config[11].empty() && numOnly(config[11])){
-		if(config[11] == "1"){
-			fallbackMode = 1;
-		}else{
-			fallbackMode = 0;
-		}
-	}else{
-		cout << "Error. Fallback mode not set?" << endl;
-		return 0;
-	}
-
 	// Get fallback email.
 	bool mailFallbackError = 0;
-	if(!config[12].empty()){
-		mailData.fallbackReceiver = config[12].c_str();
+	if(!config[10].empty()){
+		mailData.fallbackReceiver = config[10].c_str();
 	}else{
 		mailFallbackError = 1;
 		mailData.fallbackReceiver = "";
@@ -1499,8 +1457,8 @@ int main(int argc, char *argv[]){
 
 	// Get fallback JID.
 	bool xmppFallbackError = 0;
-	if(!config[13].empty()){
-		xmppData.fallbackReceiver = config[13].c_str();
+	if(!config[11].empty()){
+		xmppData.fallbackReceiver = config[11].c_str();
 	}else{
 		xmppFallbackError = 1;
 		xmppData.fallbackReceiver = "";
@@ -1508,8 +1466,8 @@ int main(int argc, char *argv[]){
 
 	// Get fallback mobile number for Clickatell API.
 	bool mobilecFallbackError = 0;
-	if(!config[13].empty()){
-		clickatellData.fallbackNumber = config[14].c_str();
+	if(!config[12].empty()){
+		clickatellData.fallbackNumber = config[12].c_str();
 	}else{
 		mobilecFallbackError = 1;
 		clickatellData.fallbackNumber = "";
@@ -1546,9 +1504,6 @@ int main(int argc, char *argv[]){
 	gnutls_anon_set_server_dh_params (anoncred, dh_params);
 
 	cout << "[ OK ]" << endl;
-
-	if(fallbackMode)
-		cout << "- Fallback mode enabled!" << endl;
 
 	// Display warnings about possibly missing fallback receivers.
 	if(mailFallbackError || xmppFallbackError || mobilecFallbackError)
@@ -1653,15 +1608,6 @@ int main(int argc, char *argv[]){
 
 				clientHandler = 0;
 
-				// Start heartbeat thread if this is a master server.
-				if(!fallbackMode){
-					pthread_t heartThread;
-					if(pthread_create(&heartThread, 0, heartbeatThread, NULL)) {
-						cout << "Terminating: Could not create heartbeat/fallover thread." << endl;
-						return 0;
-					}
-				}
-
 				// Are rude checks enabled in config file?
 				if(doRudes){
 					// Start rude check thread.
@@ -1696,16 +1642,6 @@ int main(int argc, char *argv[]){
 				// Keep the main thread running.
 				//int fails = 0;
 				while(1){
-//					if(fallbackMode){
-//						if(!Fallback::checkHeartbeat())
-//							fails++;
-//						if(fails >= 3){
-//							fallbackActive = 1;
-//							cout << "Fallback!" << endl;
-//							fails = 0;
-//						}
-//					}
-
 					XMPP xmpp(xmppData, dbData);
 
 					// Update health statistics.
