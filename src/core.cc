@@ -257,7 +257,9 @@ void* serviceHandler(void* arg){
 			}
 			mysql_close(db.getHandle());
 		}else{
-			return arg;
+      log.putLog(2, "xxx", "Could not check if service still needs to be checked (Database error). Retry in 30 seconds.");
+      sleep(30);
+      continue;
 		}
 
     // Update settings.
