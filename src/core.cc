@@ -47,13 +47,16 @@
 #include "health/Health.h"
 // Clickatell SMS API.
 #include "notifications/Clickatell.h"
+// The cloud/clustering methods.
+#include "cloud/Cloud.h"
+
 
 mySQLData dbData;
 mailingData mailData;
 XMPPData xmppData;
 mobilecData clickatellData;
 
-int heartbeatPort = 0;
+unsigned int nodeID = 0;
 
 bool clientHandler = 0;
 
@@ -381,53 +384,6 @@ void* serviceChecks(void* arg){
 	return arg;
 }
 
-struct sockaddr_in heartAddress;
-socklen_t heartAddrlen;
-
-void* heartbeatThread(void* arg){
-	// This is the live server. Provide heartbeat.
-	int heartSock;
-
-	if((heartSock = socket(AF_INET, SOCK_STREAM, 0)) == -1){
-		// Socket could not be created.
-		cout << "Could not create heartbeat socket! Aborting." << endl;
-		exit(-1);
-	}else{
-		// Socket created.
-		const int y = 1;
-		setsockopt(heartSock, SOL_SOCKET, SO_REUSEADDR, &y, sizeof(int));
-		heartAddress.sin_family = AF_INET;
-		// On which IPs to listen (INADDR_ANY -> any IP).
-		heartAddress.sin_addr.s_addr = INADDR_ANY;
-		// On which port to listen.
-		heartAddress.sin_port = htons(heartbeatPort);
-		if(bind(heartSock,(struct sockaddr *) &heartAddress, sizeof(heartAddress)) != 0) {
-			// Could not bind to socket.
-			cout << "Could not bind to heartbeat socket. "
-					"Is the server already running? Aborting." << endl;
-			exit(-1);
-		}else{
-			// Bound to socket! Listen.
-			listen(heartSock, 50);
-			heartAddrlen = sizeof(struct sockaddr_in);
-
-			int heartClntSock;
-
-			// This runs a bit longer from here on now.
-			while((heartClntSock = accept(heartSock,(struct sockaddr *)
-					&heartAddress, &heartAddrlen))){
-				const char* heartMsg = "alive";
-				send(heartClntSock,heartMsg,strlen(heartMsg),0);
-				close(heartClntSock);
-			}
-		}
-	}
-
-	// Not reached.
-
-	return (NULL);
-}
-
 // This thread checks sensor 0 about every 60 seconds and warns
 // if a host has stopped sending sensor data.
 void* onlineStateChecks(void* arg){
@@ -644,6 +600,27 @@ bool blacklisting = 0;
 long double packageCountOK = 0;
 long double packageCountERR = 0;
 
+void* cloudStatusUpdater(void* args){
+	Log log(LOGFILE, dbData);
+
+  Database db(dbData);
+  Cloud cloud(nodeID, dbData);
+
+  while(1){
+    if(db.initConnection()){
+    	while(cloud.updateOwnStatus(db)){
+        sleep(10);
+      }
+      mysql_close(db.getHandle());
+    }else{
+      // Could not connect to database.
+			log.putLog(2, "xxx", "Could not update own cloud status: Could not connect to database. Retry in one minute.");
+    }
+    sleep(60);
+  }
+
+  return (NULL);
+}
 
 void* maintenanceThread(void* args){
 
@@ -1329,6 +1306,8 @@ int main(int argc, char *argv[]){
 	parameters.push_back("mail-alt");
 	parameters.push_back("xmpp-alt");
 	parameters.push_back("mobilec-alt");
+	
+  parameters.push_back("nodeid");
 
 	ifstream configstream(CONFIGFILE);
 
@@ -1474,6 +1453,13 @@ int main(int argc, char *argv[]){
 		mobilecFallbackError = 1;
 		clickatellData.fallbackNumber = "";
 	}
+	
+	if(!config[13].empty()){
+		nodeID = stringToInteger(config[13].c_str());
+	}else{
+		cout << "Error. Node ID not set?" << endl;
+		return 0;
+	}
 
 	// Finished parsing of config file.
 	cout << "[ OK ]" << endl;
@@ -1556,6 +1542,16 @@ int main(int argc, char *argv[]){
 			return 0;
 		}
 
+    // Check if our node ID exists
+    int noderes = Cloud::checkNodeID(nodeID, db);
+    if(noderes < 0){
+      cout << "Could not check for Node ID! (" << nodeID<< ") Database error." << endl;
+      return 0;
+    }else if(noderes == 0){
+      cout << "Invalid Node ID! (" << nodeID<< ") Does not exist." << endl;
+      return 0;
+    }
+
 		db.setQuery(db.getHandle(), Information::clearHealth());
 
 		// Update notification settings.
@@ -1634,12 +1630,24 @@ int main(int argc, char *argv[]){
 					return 0;
 				}
 
-				// Start thread that send asynchronous messages.
+				// Start thread that sends asynchronous messages.
 				pthread_t messageThread;
 				if(pthread_create(&messageThread, 0, messageMonkey, NULL)) {
 					cout << "Terminating: Could not create message thread." << endl;
 					return 0;
 				}
+
+        // Start thread for cloud communication
+        pthread_t cloudStatusThread;
+				if(pthread_create(&cloudStatusThread, 0, cloudStatusUpdater, NULL)) {
+					cout << "Terminating: Could not create Cloud status updater." << endl;
+					return 0;
+				}
+
+        if(!Cloud::setTakeoff(nodeID, db)){
+          cout << "Terminating: Could not update startup timestamp." << endl;
+          return 0;
+        }
 
 				// Keep the main thread running.
 				//int fails = 0;
