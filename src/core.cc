@@ -1610,12 +1610,13 @@ int main(int argc, char *argv[]){
 					}
 				}
 
-				// Start thread that checks if monitored hosts are still sending data.
-				pthread_t onlineStateThread;
-				if(pthread_create(&onlineStateThread, 0, onlineStateChecks, NULL)) {
-					cout << "Terminating: Could not create online state check thread." << endl;
-		      exit(EXIT_FAILURE);
-				}
+// NOT YET WORKING WITH CLOUD
+//				// Start thread that checks if monitored hosts are still sending data.
+//				pthread_t onlineStateThread;
+//				if(pthread_create(&onlineStateThread, 0, onlineStateChecks, NULL)) {
+//					cout << "Terminating: Could not create online state check thread." << endl;
+//		      exit(EXIT_FAILURE);
+//				}
 
 				// Start maintenance thread.
 				pthread_t maintThread;
@@ -1624,12 +1625,13 @@ int main(int argc, char *argv[]){
 		      exit(EXIT_FAILURE);
 				}
 
-				// Start thread that sends asynchronous messages.
-				pthread_t messageThread;
-				if(pthread_create(&messageThread, 0, messageMonkey, NULL)) {
-					cout << "Terminating: Could not create message thread." << endl;
-		      exit(EXIT_FAILURE);
-				}
+// NOT YET WORKING WITH CLOUD
+//				// Start thread that sends asynchronous messages.
+//				pthread_t messageThread;
+//				if(pthread_create(&messageThread, 0, messageMonkey, NULL)) {
+//					cout << "Terminating: Could not create message thread." << endl;
+//		      exit(EXIT_FAILURE);
+//				}
 
         // Start thread for cloud communication
         pthread_t cloudStatusThread;
