@@ -1562,15 +1562,6 @@ int main(int argc, char *argv[]){
 		xmppData = XMPP::fetchSettings(dbData);
 		clickatellData = Clickatell::fetchSettings(dbData);
 
-		// Reset the client handlers.
-		if(!db.setQuery(db.getHandle(), "UPDATE services SET handler = 0")){
-			// Resetting the handlers failed.
-			cout	<< "Could not reset service handlers. Terminating. "
-					<< "(MySQL: " << db.getError() << ")"
-					<< endl;
-			exit(EXIT_FAILURE);
-		}
-
 		if((servSock = socket(AF_INET, SOCK_STREAM, 0)) == -1){
 			// Socket could not be created.
 			cout << "Could not create socket! Aborting." << endl;
