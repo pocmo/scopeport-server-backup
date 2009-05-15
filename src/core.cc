@@ -1361,13 +1361,13 @@ int main(int argc, char *argv[]){
 		exit(EXIT_FAILURE);
 	}
 
-	// Find out if we want to enable rude checks.
-	bool doRudes = 0;
+	// Find out if we want to enable service checks.
+	bool doServiceChecks = 0;
 	if(!config[2].empty()){
 		if(config[2] == "1")
-			doRudes = 1;
+			doServiceChecks = 1;
 	}else{
-		cout << "Error. Rude check mode not set?" << endl;
+		cout << "Error. Service check mode not set?" << endl;
 		exit(EXIT_FAILURE);
 	}
 
@@ -1609,7 +1609,7 @@ int main(int argc, char *argv[]){
 				clientHandler = 0;
 
 				// Are rude checks enabled in config file?
-				if(doRudes){
+				if(doServiceChecks){
 					// Start rude check thread.
 					pthread_t serviceThread;
 					if(pthread_create(&serviceThread, 0, serviceChecks, NULL)) {
