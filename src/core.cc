@@ -648,10 +648,11 @@ void* maintenanceThread(void* args){
 			clickatellData = Clickatell::fetchSettings(dbData);
 
 			// Update process statistics.
-			if(!maintDB.setQuery(maintDB.getHandle(), Information::updateHealth(Health::getPID(),
+			if(!maintDB.setQuery(maintDB.getHandle(), Information::updateHealth(nodeID, Health::getPID(),
 					clientHandler,Health::getVMSize(), Health::getThreads(), packageCountOK,
-					packageCountERR, -1, -1, -1)))
+					packageCountERR, -1, -1, -1))){
 				log.putLog(1, "053", "Could not update health statistics.");
+      }
 
 			mysql_close(maintDB.getHandle());
 		}
@@ -1554,7 +1555,7 @@ int main(int argc, char *argv[]){
 		  exit(EXIT_FAILURE);
     }
 
-		db.setQuery(db.getHandle(), Information::clearHealth());
+		db.setQuery(db.getHandle(), Information::clearHealth(nodeID));
 
 		// Update notification settings.
 		mailData = Mail::fetchSettings(dbData);
@@ -1657,13 +1658,14 @@ int main(int argc, char *argv[]){
 					XMPP xmpp(xmppData, dbData);
 
 					// Update health statistics.
-					if(!db.setQuery(db.getHandle(), Information::updateHealth(Health::getPID(),
+					if(!db.setQuery(db.getHandle(), Information::updateHealth(nodeID, Health::getPID(),
 							clientHandler,Health::getVMSize(), Health::getThreads(),
 							packageCountOK, packageCountERR,
 							Health::getDBSize(dbData, 1)/1024,
 							Health::getDBSize(dbData, 2)/1024,
-							Health::getDBSize(dbData, 3)/1024)))
+							Health::getDBSize(dbData, 3)/1024))){
 						log.putLog(1, "052", "Could not update health statistics.");
+          }
 
 					sleep(60);
 				}

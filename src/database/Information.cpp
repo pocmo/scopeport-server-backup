@@ -1,6 +1,6 @@
 // This file is part of ScopePort (Linux server).
 //
-// Copyright 2008 Lennart Koopmann
+// Copyright 2008, 2009 Lennart Koopmann
 //
 // ScopePort (Linux server) is free software: you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as published by
@@ -246,19 +246,26 @@ vector<string> Information::getMobileCWarningReceivers(MYSQL* init, string group
 	return result;
 }
 
-string Information::clearHealth(){
-	return "TRUNCATE TABLE vitals";
+string Information::clearHealth(unsigned int nodeID){
+  stringstream sNodeID;
+  sNodeID << nodeID;
+	return "DELETE FROM vitals WHERE node_id = " + sNodeID.str();
 }
 
-string Information::updateHealth(string pid, bool clienthandler, string vmem, string threads,
+string Information::updateHealth(unsigned int nodeID, string pid, bool clienthandler, string vmem, string threads,
 		int packetsOK, int packetsERR, double dbTotalSize, double dbSensorSize,
 		double dbServiceSize){
 	time_t rawtime;
 	time(&rawtime);
 
+  // Generate a NodePID: A PID that includes the NodeID separated by three zeros.
+  stringstream node_pid;
+  node_pid << nodeID << "000" << pid;
+  pid = node_pid.str();
+
 	stringstream query;
 
-	query 	<<	"INSERT INTO vitals (pid, clienthandler, vmem, "
+	query 	<<	"INSERT INTO vitals (node_id, pid, clienthandler, vmem, "
 				"threads, timestamp, packetsOK, packetsERR";
 
 	if(dbTotalSize >= 0){
@@ -266,6 +273,8 @@ string Information::updateHealth(string pid, bool clienthandler, string vmem, st
 	}
 
 	query	<<	") VALUES ('"
+			<<	nodeID
+      <<	"', '"
 			<<	pid
 			<<	"', '"
 			<<	clienthandler

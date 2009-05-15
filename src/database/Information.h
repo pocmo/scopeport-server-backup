@@ -1,6 +1,6 @@
 // This file is part of ScopePort (Linux server).
 //
-// Copyright 2008 Lennart Koopmann
+// Copyright 2008, 2009 Lennart Koopmann
 //
 // ScopePort (Linux server) is free software: you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as published by
@@ -139,11 +139,12 @@ class Information{
 		 */
 		static vector<string> getMobileCWarningReceivers(MYSQL* init, string groupID, string sevBorder);
 
-		//! Returns query to delete all health data from database.
-		static string clearHealth();
+		//! Returns query to delete all health data of this node from database.
+		static string clearHealth(unsigned int nodeID);
 
 		//! Returns query to update health data of given PID in database.
 		/*!
+     * \param nodeID The ID of this node
 		 * \param pid The PID. Used as primary key.
 		 * \param clienthandler Bool. Is this process a clientHandler?
 		 * \param vmem This process' size of virtual memory
@@ -156,7 +157,7 @@ class Information{
 		 * \sa clearHealth()
 		 * \return Query
 		 */
-		static string updateHealth(string pid, bool clienthandler, string vmem, string threads,
+		static string updateHealth(unsigned int nodeID, string pid, bool clienthandler, string vmem, string threads,
 				int packetsOK, int packetsERR, double dbTotalSize, double dbSensorSize,
 				double dbServiceSize);
 
