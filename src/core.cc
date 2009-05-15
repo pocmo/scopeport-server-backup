@@ -1600,9 +1600,9 @@ int main(int argc, char *argv[]){
 
 				clientHandler = 0;
 
-				// Are rude checks enabled in config file?
+				// Are service checks enabled in config file?
 				if(doServiceChecks){
-					// Start rude check thread.
+					// Start service check thread.
 					pthread_t serviceThread;
 					if(pthread_create(&serviceThread, 0, serviceChecks, NULL)) {
 						cout << "Terminating: Could not create service checks thread." << endl;
