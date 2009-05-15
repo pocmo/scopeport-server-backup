@@ -1585,18 +1585,19 @@ int main(int argc, char *argv[]){
 
 				addrlen = sizeof(struct sockaddr_in);
 
-				for(int threadCount = 0; threadCount < numProcs; threadCount++){
-					// Fork client handlers.
-					pid_t processID;
-					if((processID = fork()) < 0){
-						cout << "Could not fork client handlers." << endl;
-						exit(EXIT_FAILURE);
-					}else if(processID == 0){
-						// This is the child process / Forking worked.
-						clientHandler = 1;
-						handleClient();
-					}
-				}
+// NOT YET WORKING WITH CLOUD
+//				for(int threadCount = 0; threadCount < numProcs; threadCount++){
+//					// Fork client handlers.
+//					pid_t processID;
+//					if((processID = fork()) < 0){
+//						cout << "Could not fork client handlers." << endl;
+//						exit(EXIT_FAILURE);
+//					}else if(processID == 0){
+//						// This is the child process / Forking worked.
+//						clientHandler = 1;
+//						handleClient();
+//					}
+//				}
 
 				clientHandler = 0;
 
