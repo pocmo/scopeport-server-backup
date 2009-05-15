@@ -223,6 +223,8 @@ void* serviceHandler(void* arg){
 		stringstream announce;
 		announce	<< "UPDATE services SET handler = "
 					<< service.getHandlerID()
+          << ", node_id = "
+          << nodeID
 					<< " WHERE id = "
 					<< service.getServiceID();
 
@@ -726,7 +728,7 @@ void handleClient(){
 	pthread_t maintThread;
 	if(pthread_create(&maintThread, 0, maintenanceThread, NULL)) {
 		cout << "Terminating: Could not create maintenance thread." << endl;
-		exit(-1);
+		exit(EXIT_FAILURE);
 	}
 
 	Log log(LOGFILE, dbData);
@@ -1233,14 +1235,14 @@ void handleClient(){
 
 	// Not reached.
 
-	exit(-1);
+	exit(EXIT_FAILURE);
 }
 
 void cleanUp(int sig){
 	remove(PIDFILE);
 	gnutls_anon_free_server_credentials (anoncred);
 	gnutls_global_deinit();
-	exit(-1);
+	exit(EXIT_FAILURE);
 }
 
 void logTLS(int level, const char *message){
@@ -1257,7 +1259,7 @@ int main(int argc, char *argv[]){
 	// Check if we are root.
 	if(geteuid() != 0){
 		cout <<  "The server needs to be started as root." << endl;
-		return 0;
+		exit(EXIT_FAILURE);
 	}
 
   bool debug = 0;
@@ -1272,8 +1274,8 @@ int main(int argc, char *argv[]){
 	// Check if config file is readable
 	ifstream configtest(CONFIGFILE);
 	if(configtest.fail()){
-	 cout << "Terminating: Could not read config file. Check permissions and if file exists." << endl;
-	 return 0;
+	  cout << "Terminating: Could not read config file. Check permissions and if file exists." << endl;
+		exit(EXIT_FAILURE);
 	}
 	configtest.close();
 
@@ -1349,14 +1351,14 @@ int main(int argc, char *argv[]){
 		port = stringToInteger(config[0].c_str());
 	}else{
 		cout << "Error. Port not set?" << endl;
-		return 0;
+		exit(EXIT_FAILURE);
 	}
 
 	if(!config[1].empty()){
 		loglevel = stringToInteger(config[1].c_str());
 	}else{
 		cout << "Error. Loglevel not set?" << endl;
-		return 0;
+		exit(EXIT_FAILURE);
 	}
 
 	// Find out if we want to enable rude checks.
@@ -1366,7 +1368,7 @@ int main(int argc, char *argv[]){
 			doRudes = 1;
 	}else{
 		cout << "Error. Rude check mode not set?" << endl;
-		return 0;
+		exit(EXIT_FAILURE);
 	}
 
 	// Find out if we want to enable the blacklist.
@@ -1375,7 +1377,7 @@ int main(int argc, char *argv[]){
 			blacklisting = 1;
 	}else{
 		cout << "Error. Blacklisting mode not set?" << endl;
-		return 0;
+		exit(EXIT_FAILURE);
 	}
 
 	// Get MySQL host.
@@ -1383,7 +1385,7 @@ int main(int argc, char *argv[]){
 		dbData.host = config[4].c_str();
 	}else{
 		cout << "Error. MySQL host not set?" << endl;
-		return 0;
+		exit(EXIT_FAILURE);
 	}
 
 	// Get MySQL database.
@@ -1391,7 +1393,7 @@ int main(int argc, char *argv[]){
 		dbData.db = config[5].c_str();
 	}else{
 		cout << "Error. MySQL database not set?" << endl;
-		return 0;
+		exit(EXIT_FAILURE);
 	}
 
 	// Get MySQL user.
@@ -1399,7 +1401,7 @@ int main(int argc, char *argv[]){
 		dbData.user = config[6].c_str();
 	}else{
 		cout << "Error. MySQL user not set?" << endl;
-		return 0;
+		exit(EXIT_FAILURE);
 	}
 
 	// Get MySQL password.
@@ -1407,7 +1409,7 @@ int main(int argc, char *argv[]){
 		dbData.pass = config[7].c_str();
 	}else{
 		cout << "Error. MySQL password not set?" << endl;
-		return 0;
+		exit(EXIT_FAILURE);
 	}
 
 	// Get MySQL port.
@@ -1415,7 +1417,7 @@ int main(int argc, char *argv[]){
 		dbData.port = stringToInteger(config[8].c_str());
 	}else{
 		cout << "Error. MySQL port not set?" << endl;
-		return 0;
+		exit(EXIT_FAILURE);
 	}
 
 	// Get number of processes to fork.
@@ -1424,7 +1426,7 @@ int main(int argc, char *argv[]){
 		numProcs = stringToInteger(config[9].c_str());
 	}else{
 		cout << "Error. Number of processes to fork not set?" << endl;
-		return 0;
+		exit(EXIT_FAILURE);
 	}
 
 	// Get fallback email.
@@ -1458,7 +1460,7 @@ int main(int argc, char *argv[]){
 		nodeID = stringToInteger(config[13].c_str());
 	}else{
 		cout << "Error. Node ID not set?" << endl;
-		return 0;
+		exit(EXIT_FAILURE);
 	}
 
 	// Finished parsing of config file.
@@ -1470,7 +1472,7 @@ int main(int argc, char *argv[]){
 	if(selfTest(port, loglevel) != "1"){
 		// Selftest failed!
 		cout << "Terminating: " << selfTest(port, loglevel) << endl;
-		return 0;
+		exit(EXIT_FAILURE);
 	}else{
 		// No errors.
 		cout << "[ OK ]" << endl;
@@ -1503,7 +1505,7 @@ int main(int argc, char *argv[]){
   if(!debug){
   	if(daemon(0,0) < 0){
   		cout << "Terminated. Could not initialize daemon mode!" << endl;
-  		return 0;
+		  exit(EXIT_FAILURE);
   	}
   }
 
@@ -1517,7 +1519,7 @@ int main(int argc, char *argv[]){
 		pidwrite << pid << endl;
 	}else{
 		log.putLog(2, "50", "Terminated. Could not create pidfile!");
-		return 0;
+		exit(EXIT_FAILURE);
 	}
 	pidwrite.close();
 
@@ -1539,17 +1541,17 @@ int main(int argc, char *argv[]){
 			cout << "Broken database table structure! Aborting." << endl;
 			cout << "\t Error in table: " << db.getMissingTable() << endl;
 			cout << "\t " << db.getError() << endl;
-			return 0;
+		  exit(EXIT_FAILURE);
 		}
 
     // Check if our node ID exists
     int noderes = Cloud::checkNodeID(nodeID, db);
     if(noderes < 0){
       cout << "Could not check for Node ID! (" << nodeID<< ") Database error." << endl;
-      return 0;
+		  exit(EXIT_FAILURE);
     }else if(noderes == 0){
       cout << "Invalid Node ID! (" << nodeID<< ") Does not exist." << endl;
-      return 0;
+		  exit(EXIT_FAILURE);
     }
 
 		db.setQuery(db.getHandle(), Information::clearHealth());
@@ -1565,13 +1567,13 @@ int main(int argc, char *argv[]){
 			cout	<< "Could not reset service handlers. Terminating. "
 					<< "(MySQL: " << db.getError() << ")"
 					<< endl;
-			exit(-1);
+			exit(EXIT_FAILURE);
 		}
 
 		if((servSock = socket(AF_INET, SOCK_STREAM, 0)) == -1){
 			// Socket could not be created.
 			cout << "Could not create socket! Aborting." << endl;
-			return 0;
+		  exit(EXIT_FAILURE);
 		}else{
 			// Socket created.
 			const int y = 1;
@@ -1584,7 +1586,7 @@ int main(int argc, char *argv[]){
 			if(bind (servSock,(struct sockaddr *) &address,sizeof (address)) != 0) {
 				// Could not bind to socket.
 				cout << "Could not bind to socket. Is the server already running? Aborting." << endl;
-				return 0;
+		    exit(EXIT_FAILURE);
 			}else{
 				// Bound to socket! Listen.
 				listen(servSock, 50);
@@ -1596,7 +1598,7 @@ int main(int argc, char *argv[]){
 					pid_t processID;
 					if((processID = fork()) < 0){
 						cout << "Could not fork client handlers." << endl;
-						exit(-1);
+						exit(EXIT_FAILURE);
 					}else if(processID == 0){
 						// This is the child process / Forking worked.
 						clientHandler = 1;
@@ -1612,7 +1614,7 @@ int main(int argc, char *argv[]){
 					pthread_t serviceThread;
 					if(pthread_create(&serviceThread, 0, serviceChecks, NULL)) {
 						cout << "Terminating: Could not create service checks thread." << endl;
-						return 0;
+		        exit(EXIT_FAILURE);
 					}
 				}
 
@@ -1620,33 +1622,33 @@ int main(int argc, char *argv[]){
 				pthread_t onlineStateThread;
 				if(pthread_create(&onlineStateThread, 0, onlineStateChecks, NULL)) {
 					cout << "Terminating: Could not create online state check thread." << endl;
-					return 0;
+		      exit(EXIT_FAILURE);
 				}
 
 				// Start maintenance thread.
 				pthread_t maintThread;
 				if(pthread_create(&maintThread, 0, maintenanceThread, NULL)) {
 					cout << "Terminating: Could not create maintenance thread." << endl;
-					return 0;
+		      exit(EXIT_FAILURE);
 				}
 
 				// Start thread that sends asynchronous messages.
 				pthread_t messageThread;
 				if(pthread_create(&messageThread, 0, messageMonkey, NULL)) {
 					cout << "Terminating: Could not create message thread." << endl;
-					return 0;
+		      exit(EXIT_FAILURE);
 				}
 
         // Start thread for cloud communication
         pthread_t cloudStatusThread;
 				if(pthread_create(&cloudStatusThread, 0, cloudStatusUpdater, NULL)) {
 					cout << "Terminating: Could not create Cloud status updater." << endl;
-					return 0;
+		      exit(EXIT_FAILURE);
 				}
 
         if(!Cloud::setTakeoff(nodeID, db)){
           cout << "Terminating: Could not update startup timestamp." << endl;
-          return 0;
+		      exit(EXIT_FAILURE);
         }
 
 				// Keep the main thread running.
@@ -1676,6 +1678,6 @@ int main(int argc, char *argv[]){
 	}
 
 	// Not reached.
-
-	return 0;
+  
+  exit(EXIT_FAILURE);
 }
