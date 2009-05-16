@@ -645,9 +645,9 @@ void* cloudServiceManager(void* args){
       // Service balance
       // Get number of currently self monitored services.
       unsigned int ownServices = cloud.getNumberOfOwnServices(db);
-      unsigned int nodeWithMostServices = cloud.getNodeWithMostServices(db);
+      //unsigned int nodeWithMostServices = cloud.getNodeWithMostServices(db);
       // request ownServices/nodeWithMostServices
-      cout << "own services: " << cloud.getNumberOfOwnServices(db) << endl;
+      //cout << "own services: " << cloud.getNumberOfOwnServices(db) << endl;
 
       mysql_close(db.getHandle());
     }else{
