@@ -176,9 +176,13 @@ void* serviceHandler(void* arg){
 
 	// Try to establish a database connection.
 	if(db.initConnection()){
+    time_t rawtime;
+    time(&rawtime);
+    int twoMinutesAgo = rawtime-120;
 		// Fetch a service to handle.
-    string query = "SELECT id FROM services WHERE handler = 0 AND disabled = 0 LIMIT 1";
-		if(mysql_real_query(db.getHandle(), query.c_str(), strlen(query.c_str())) == 0){
+    stringstream query;
+    query << "SELECT id FROM services WHERE (handler = 0 OR lastcheck < " << twoMinutesAgo << " ) AND disabled = 0 LIMIT 1";
+		if(mysql_real_query(db.getHandle(), query.str().c_str(), strlen(query.str().c_str())) == 0){
 			// Query successful.
 			MYSQL_ROW serviceResult;
 			MYSQL_RES* res = mysql_store_result(db.getHandle());
@@ -351,8 +355,13 @@ void* serviceChecks(void* arg){
 	while(1){
 		// Try to establish a database connection.
 		if(db.initConnection()){
+      time_t rawtime;
+      time(&rawtime);
+      int twoMinutesAgo = rawtime-120;
 			// Get the number of services that have no handler yet.
-			unsigned int numOfServices = db.getNumOfResults("SELECT id FROM services WHERE handler = 0");
+      stringstream query;
+      query << "SELECT id FROM services WHERE handler = 0 OR lastcheck < " << twoMinutesAgo;
+			unsigned int numOfServices = db.getNumOfResults(query.str());
 			mysql_close(db.getHandle());
 
 			// Start a thread for every service that has no handler yet.
@@ -619,6 +628,33 @@ void* cloudStatusUpdater(void* args){
 			log.putLog(2, "xxx", "Could not update own cloud status: Could not connect to database. Retry in one minute.");
     }
     sleep(60);
+  }
+
+  return (NULL);
+}
+
+void* cloudServiceManager(void* args){
+	Log log(LOGFILE, dbData);
+
+  Database db(dbData);
+  Cloud cloud(nodeID, dbData);
+
+  while(1){
+    if(db.initConnection()){
+
+      // Service balance
+      // Get number of currently self monitored services.
+      unsigned int ownServices = cloud.getNumberOfOwnServices(db);
+      unsigned int nodeWithMostServices = cloud.getNodeWithMostServices(db);
+      // request ownServices/nodeWithMostServices
+      cout << "own services: " << cloud.getNumberOfOwnServices(db) << endl;
+
+      mysql_close(db.getHandle());
+    }else{
+      // Could not connect to database.
+			log.putLog(2, "xxx", "Could not update own cloud status: Could not connect to database. Retry in one minute.");
+    }
+    sleep(5);
   }
 
   return (NULL);
@@ -1634,10 +1670,17 @@ int main(int argc, char *argv[]){
 //		      exit(EXIT_FAILURE);
 //				}
 
-        // Start thread for cloud communication
+        // Start thread for cloud status updating.
         pthread_t cloudStatusThread;
 				if(pthread_create(&cloudStatusThread, 0, cloudStatusUpdater, NULL)) {
-					cout << "Terminating: Could not create Cloud status updater." << endl;
+					cout << "Terminating: Could not create cloud status updater." << endl;
+		      exit(EXIT_FAILURE);
+				}
+
+        // Start thread for cloud service management.
+        pthread_t cloudServiceManagerThread;
+				if(pthread_create(&cloudServiceManagerThread, 0, cloudServiceManager, NULL)) {
+					cout << "Terminating: Could not create cloud service management thread." << endl;
 		      exit(EXIT_FAILURE);
 				}
 

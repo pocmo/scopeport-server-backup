@@ -28,6 +28,8 @@ class Cloud{
 	public:
     Cloud(int myNodeID, mySQLData myDBData);
     bool updateOwnStatus(Database db);
+    unsigned int getNumberOfOwnServices(Database db);
+
     static int checkNodeID(int nodeID, Database db);
     static bool setTakeoff(int nodeID, Database db);
 };

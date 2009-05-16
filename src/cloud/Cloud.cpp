@@ -75,3 +75,10 @@ bool Cloud::updateOwnStatus(Database db){
     return 0;
   }
 }
+
+unsigned int Cloud::getNumberOfOwnServices(Database db){
+  stringstream query;
+  query << "SELECT id FROM services WHERE node_id = " << nodeID;
+  return db.getNumOfResults(query.str());
+}
+
