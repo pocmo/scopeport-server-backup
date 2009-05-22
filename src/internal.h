@@ -30,6 +30,7 @@
 #include <cstdlib>
 #include <stdio.h>
 #include <sys/time.h>
+#include <math.h>
 
 // Socket related stuff.
 #include <sys/socket.h>

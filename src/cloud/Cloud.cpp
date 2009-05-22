@@ -24,7 +24,7 @@ Cloud::Cloud(int myNodeID, mySQLData myDBData){
   dbData = myDBData;
 }
 
-int Cloud::checkNodeID(int nodeID, Database db){
+int Cloud::checkNodeID(unsigned int nodeID, Database db){
   // Connected to database.  
   stringstream query;
   query << "SELECT id FROM nodes WHERE id = " << nodeID;
@@ -42,7 +42,7 @@ int Cloud::checkNodeID(int nodeID, Database db){
   return -1;
 }
 
-bool Cloud::setTakeoff(int nodeID, Database db){
+bool Cloud::setTakeoff(unsigned int nodeID, Database db){
   time_t rawtime;
 	time(&rawtime);
   
@@ -79,6 +79,18 @@ bool Cloud::updateOwnStatus(Database db){
 unsigned int Cloud::getNumberOfOwnServices(Database db){
   stringstream query;
   query << "SELECT id FROM services WHERE node_id = " << nodeID;
+  return db.getNumOfResults(query.str());
+}
+
+unsigned int Cloud::getIdOfNodeWithMostServices(Database db){
+  stringstream query;
+  query << "SELECT node_id, count(*) AS count FROM services GROUP BY node_id ORDER BY count DESC";
+  return(stringToInteger(db.sGetQuery(query.str())));
+}
+ 
+unsigned int Cloud::getNumberOfServicesFromNode(unsigned int foreignNodeID, Database db){
+  stringstream query;
+  query << "SELECT id FROM services WHERE node_id = " << foreignNodeID;
   return db.getNumOfResults(query.str());
 }
 

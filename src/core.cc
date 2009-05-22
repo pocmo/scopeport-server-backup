@@ -645,14 +645,31 @@ void* cloudServiceManager(void* args){
       // Service balance
       // Get number of currently self monitored services.
       unsigned int ownServices = cloud.getNumberOfOwnServices(db);
-      //unsigned int nodeWithMostServices = cloud.getNodeWithMostServices(db);
-      // request ownServices/nodeWithMostServices
-      //cout << "own services: " << cloud.getNumberOfOwnServices(db) << endl;
+      
+      cout << "own services: " << ownServices << endl;
+      unsigned int nodeWithMostServices = cloud.getIdOfNodeWithMostServices(db);
+      unsigned int numberOfMostServices = cloud.getNumberOfServicesFromNode(nodeWithMostServices, db);
+      cout << "most services: " << numberOfMostServices << " (node id: " << nodeWithMostServices << ")" << endl;
+      
+      /*
+       * Skip everything if we are the node with the highest number of services or
+       * the other node has the same amount of services as we have.
+       */
+      if(nodeID != nodeWithMostServices){
+        unsigned int numberOfRequestedServices = 0;
+        if(ownServices > 0){
+          numberOfRequestedServices = ceil((numberOfMostServices-ownServices)/2);
+        }else{
+          numberOfRequestedServices = ceil(numberOfMostServices/2);
+        }
+        cout << "requesting " << numberOfRequestedServices << " services from node " << nodeWithMostServices << endl;
+      }
 
       mysql_close(db.getHandle());
     }else{
       // Could not connect to database.
 			log.putLog(2, "xxx", "Could not update own cloud status: Could not connect to database. Retry in one minute.");
+      sleep(55);
     }
     sleep(5);
   }
@@ -1646,6 +1663,7 @@ int main(int argc, char *argv[]){
 		        exit(EXIT_FAILURE);
 					}
 				}
+
 
 // NOT YET WORKING WITH CLOUD
 //				// Start thread that checks if monitored hosts are still sending data.
