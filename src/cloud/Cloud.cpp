@@ -83,8 +83,15 @@ unsigned int Cloud::getNumberOfOwnServices(Database db){
 }
 
 unsigned int Cloud::getIdOfNodeWithMostServices(Database db){
+  time_t rawtime;
+	time(&rawtime);
+
   stringstream query;
-  query << "SELECT node_id, count(*) AS count FROM services GROUP BY node_id ORDER BY count DESC";
+  query << "SELECT s.node_id, count(*) AS count "
+           "FROM services AS s "
+           "LEFT JOIN nodes AS n ON s.node_id = n.id "
+           "WHERE n.last_update >  " << rawtime-10 << " "
+           "GROUP BY s.node_id ORDER BY count DESC";
   return(stringToInteger(db.sGetQuery(query.str())));
 }
  

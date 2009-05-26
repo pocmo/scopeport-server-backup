@@ -637,11 +637,12 @@ void* cloudServiceManager(void* args){
 	Log log(LOGFILE, dbData);
 
   Database db(dbData);
-  Cloud cloud(nodeID, dbData);
 
   while(1){
     if(db.initConnection()){
 
+      Cloud cloud(nodeID, dbData);
+    
       // Service balance
       // Get number of currently self monitored services.
       unsigned int ownServices = cloud.getNumberOfOwnServices(db);
