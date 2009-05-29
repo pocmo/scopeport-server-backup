@@ -663,7 +663,8 @@ void* cloudServiceManager(void* args){
         }else{
           numberOfRequestedServices = ceil(numberOfMostServices/2);
         }
-        cout << "requesting " << numberOfRequestedServices << " services from node " << nodeWithMostServices << endl;
+        node.requestServices(nomberOfRequestedServices, nodeWithMostServices);
+        cout << "requested " << numberOfRequestedServices << " services from node " << nodeWithMostServices << endl;
       }
 
       mysql_close(db.getHandle());

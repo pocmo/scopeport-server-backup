@@ -163,7 +163,10 @@ unsigned int Database::getNumOfResults(string query){
 	if(mysql_real_query(init, query.c_str(), strlen(query.c_str())) == 0){
 		// Query successful.
 		MYSQL_RES* res = mysql_store_result(init);
-		unsigned int num = mysql_num_rows(res);
+		unsigned int num = 0;
+    if((num = mysql_num_rows(res)) <= 0){
+      num = 0;
+    }
 		mysql_free_result(res);
 		return num;
 	}
