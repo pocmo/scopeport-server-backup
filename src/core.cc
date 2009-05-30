@@ -658,17 +658,17 @@ void* cloudServiceManager(void* args){
 
       // Get the number of services the node with the most services currently handles.
       unsigned int numberOfMostServices = cloud.getNumberOfServicesFromNode(nodeWithMostServices, db);
-      
+  
       /*
        * Skip everything if we are the node with the highest number of services or
-       * the other node has the same amount of services as we have.
+       * the other node has less services than we have.
        */
       if(nodeID != nodeWithMostServices){
         unsigned int numberOfRequestedServices = 0;
-        if(ownServices > 0){
+        if(ownServices > 0 && numberOfMostServices > ownServices){
           numberOfRequestedServices = ceil((numberOfMostServices-ownServices)/2);
         }else{
-          numberOfRequestedServices = ceil(numberOfMostServices/2);
+          numberOfRequestedServices = 0;
         }
 
         // Request.
