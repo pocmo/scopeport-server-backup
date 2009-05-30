@@ -106,9 +106,6 @@ bool Cloud::action_requestServices(unsigned int count, unsigned int from_node, D
 }
 
 bool Cloud::storeAction(unsigned int receiver, string type, string value, unsigned int conversation_id, Database db){
-  time_t rawtime;
-  time(&rawtime);
-
   stringstream query;
   query << "INSERT INTO nodecommunications(sender_id, receiver_id, type, value, timestamp, conversation_id) "
            "VALUES("
@@ -119,28 +116,24 @@ bool Cloud::storeAction(unsigned int receiver, string type, string value, unsign
         << type
         << "','"
         << value
-        << "',"
-        << rawtime
-        << ","
-        << conversation_id;
+        << "', NOW(), "
+        << conversation_id
+        << ")";
    cout << query.str() << endl;
 
-   return 1;
+   return db.setQuery(db.getHandle(), query.str());
 }
 
 void Cloud::log(string message, Database db){
-  time_t rawtime;
-  time(&rawtime);
-  
   stringstream query;
   query << "INSERT INTO nodecommunications(sender_id, receiver_id, type, value, timestamp, conversation_id) VALUES("
         << getOwnID()
         << ",0,'log_message','"
         << message
-        << "',"
-        << rawtime
+        << "', NOW(), "
         << Cloud::generateConversationID()
         << ")";
+  cout << query.str() << endl;
   db.setQuery(db.getHandle(), query.str());
 }
 
