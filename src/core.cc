@@ -658,7 +658,13 @@ void* cloudServiceManager(void* args){
 
       // Get the number of services the node with the most services currently handles.
       unsigned int numberOfMostServices = cloud.getNumberOfServicesFromNode(nodeWithMostServices, db);
-  
+ 
+      ////
+        cout << "own services: " << ownServices << endl
+             << "node with most services: " << nodeWithMostServices << endl
+             << "number of most services: " << numberOfMostServices << endl;
+      ////
+
       /*
        * Skip everything if we are the node with the highest number of services or
        * the other node has less services than we have.
