@@ -674,7 +674,7 @@ void* cloudServiceManager(void* args){
         if(ownServices > 0 && numberOfMostServices > ownServices){
           numberOfRequestedServices = ceil((numberOfMostServices-ownServices)/2);
         }else{
-          numberOfRequestedServices = 0;
+          numberOfRequestedServices = ceil((numberOfMostServices)/2);
         }
 
         // Request.
