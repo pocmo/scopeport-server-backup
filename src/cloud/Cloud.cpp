@@ -119,7 +119,6 @@ bool Cloud::storeAction(unsigned int receiver, string type, string value, unsign
         << "', NOW(), "
         << conversation_id
         << ")";
-   cout << query.str() << endl;
 
    return db.setQuery(db.getHandle(), query.str());
 }
@@ -133,7 +132,6 @@ void Cloud::log(string message, Database db){
         << "', NOW(), "
         << Cloud::generateConversationID()
         << ")";
-  cout << query.str() << endl;
   db.setQuery(db.getHandle(), query.str());
 }
 

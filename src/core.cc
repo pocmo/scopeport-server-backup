@@ -651,13 +651,13 @@ void* cloudServiceManager(void* args){
     
       // Service balance
       // Get number of currently self monitored services.
-      unsigned int ownServices = cloud.getNumberOfOwnServices(db);
+      static unsigned int ownServices = cloud.getNumberOfOwnServices(db);
       
       // Get ID of node with most services.
-      unsigned int nodeWithMostServices = cloud.getIdOfNodeWithMostServices(db);
+      static unsigned int nodeWithMostServices = cloud.getIdOfNodeWithMostServices(db);
 
       // Get the number of services the node with the most services currently handles.
-      unsigned int numberOfMostServices = cloud.getNumberOfServicesFromNode(nodeWithMostServices, db);
+      static unsigned int numberOfMostServices = cloud.getNumberOfServicesFromNode(nodeWithMostServices, db);
  
       /*
        * Skip everything if we are the node with the highest number of services or
@@ -671,14 +671,16 @@ void* cloudServiceManager(void* args){
           numberOfRequestedServices = ceil((numberOfMostServices)/2);
         }
 
-        // Request.
-        if(cloud.action_requestServices(numberOfRequestedServices, nodeWithMostServices, db)){
-          // Request was sent successful. Log it.
-          stringstream logmsg;
-          logmsg << "Requested " << numberOfRequestedServices << " from Node " << nodeWithMostServices;
-          cloud.log(logmsg.str(), db);
-        }else{
-			    log.putLog(2, "xxx", "Could not request services from another node: Database error.");
+        if(numberOfRequestedServices > 0){
+          // Request.
+          if(cloud.action_requestServices(numberOfRequestedServices, nodeWithMostServices, db)){
+            // Request was sent successful. Log it.
+            stringstream logmsg;
+            logmsg << "Requested " << numberOfRequestedServices << " services from node " << nodeWithMostServices;
+            cloud.log(logmsg.str(), db);
+          }else{
+            log.putLog(2, "xxx", "Could not request services from another node: Database error.");
+          }
         }
       }
 
