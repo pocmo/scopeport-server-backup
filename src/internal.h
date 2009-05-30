@@ -137,6 +137,7 @@ struct enData {
 
 // Functions.
 int stringToInteger(string st);
+string integerToString(int i);
 string noSpaces(string str);
 char* noNewLine(char* str, int size);
 string noNewLineS(string str);

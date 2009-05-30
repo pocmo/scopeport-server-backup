@@ -101,3 +101,64 @@ unsigned int Cloud::getNumberOfServicesFromNode(unsigned int foreignNodeID, Data
   return db.getNumOfResults(query.str());
 }
 
+bool Cloud::action_requestServices(unsigned int count, unsigned int from_node, Database db){
+  return storeAction(from_node, "service_request", integerToString(count), Cloud::generateConversationID(), db);
+}
+
+bool Cloud::storeAction(unsigned int receiver, string type, string value, unsigned int conversation_id, Database db){
+  time_t rawtime;
+  time(&rawtime);
+
+  stringstream query;
+  query << "INSERT INTO nodecommunications(sender_id, receiver_id, type, value, timestamp, conversation_id) "
+           "VALUES("
+        << getOwnID()
+        << ","
+        << receiver
+        << ",'"
+        << type
+        << "','"
+        << value
+        << "',"
+        << rawtime
+        << ","
+        << conversation_id;
+   cout << query.str() << endl;
+
+   return 1;
+}
+
+void Cloud::log(string message, Database db){
+  time_t rawtime;
+  time(&rawtime);
+  
+  stringstream query;
+  query << "INSERT INTO nodecommunications(sender_id, receiver_id, type, value, timestamp, conversation_id) VALUES("
+        << getOwnID()
+        << ",0,'log_message','"
+        << message
+        << "',"
+        << rawtime
+        << Cloud::generateConversationID()
+        << ")";
+  db.setQuery(db.getHandle(), query.str());
+}
+
+unsigned int Cloud::generateConversationID(){
+  // Generate random number.
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  srand(tv.tv_sec * tv.tv_usec);
+
+  unsigned int result;
+
+  stringstream conversationID;
+  conversationID << getOwnID() << rand();
+  result = stringToInteger(conversationID.str());
+  return result;
+}
+
+unsigned int Cloud::getOwnID(){
+  return nodeID;
+}
+

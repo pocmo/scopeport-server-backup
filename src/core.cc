@@ -62,13 +62,19 @@ bool clientHandler = 0;
 
 gnutls_anon_server_credentials_t anoncred;
 
-inline int stringToInteger(string st){
+int stringToInteger(string st){
 	int result;
 	if(stringstream(st) >> result){
 		return result;
 	}else{
 		return 0;
 	}
+}
+
+string integerToString(int i){
+  stringstream res;
+  res << i;
+  return res.str();
 }
 
 bool numOnly(string checkMe){
@@ -647,10 +653,11 @@ void* cloudServiceManager(void* args){
       // Get number of currently self monitored services.
       unsigned int ownServices = cloud.getNumberOfOwnServices(db);
       
-      cout << "own services: " << ownServices << endl;
+      // Get ID of node with most services.
       unsigned int nodeWithMostServices = cloud.getIdOfNodeWithMostServices(db);
+
+      // Get the number of services the node with the most services currently handles.
       unsigned int numberOfMostServices = cloud.getNumberOfServicesFromNode(nodeWithMostServices, db);
-      cout << "most services: " << numberOfMostServices << " (node id: " << nodeWithMostServices << ")" << endl;
       
       /*
        * Skip everything if we are the node with the highest number of services or
@@ -663,7 +670,16 @@ void* cloudServiceManager(void* args){
         }else{
           numberOfRequestedServices = ceil(numberOfMostServices/2);
         }
-        node.requestServices(nomberOfRequestedServices, nodeWithMostServices);
+
+        // Request.
+        if(cloud.action_requestServices(numberOfRequestedServices, nodeWithMostServices, db)){
+          // Request was sent successful. Log it.
+          stringstream logmsg;
+          logmsg << "Requested " << numberOfRequestedServices << " from Node " << nodeWithMostServices;
+          cloud.log(logmsg.str(), db);
+        }else{
+			    log.putLog(2, "xxx", "Could not request services from another node: Database error.");
+        }
         cout << "requested " << numberOfRequestedServices << " services from node " << nodeWithMostServices << endl;
       }
 

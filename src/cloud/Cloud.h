@@ -25,12 +25,22 @@ class Cloud{
   private:
     int nodeID;
     mySQLData dbData;
-	public:
+    unsigned int generateConversationID();
+
+  public:
     Cloud(int myNodeID, mySQLData myDBData);
     bool updateOwnStatus(Database db);
     unsigned int getNumberOfOwnServices(Database db);
     unsigned int getIdOfNodeWithMostServices(Database db);
     unsigned int getNumberOfServicesFromNode(unsigned int foreignNodeID, Database db);
+
+    bool action_requestServices(unsigned int count, unsigned int from_node, Database db);
+
+    bool storeAction(unsigned int receiver, string type, string value, unsigned int conversation_id, Database db);
+
+    void log(string message, Database db);
+
+    unsigned int getOwnID();
 
     static int checkNodeID(unsigned int nodeID, Database db);
     static bool setTakeoff(unsigned int nodeID, Database db);
