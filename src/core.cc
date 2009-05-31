@@ -189,7 +189,7 @@ void* serviceHandler(void* arg){
     stringstream query;
     query << "SELECT id FROM services WHERE (reserved_for = "
           << nodeID
-          << " AND TIMEDIFF(reserved_at, NOW()) < '00:00:30') "
+          << " AND TIMEDIFF(reserved_on, NOW()) < '00:00:30') "
              "OR handler = 0 OR lastcheck < "
           << twoMinutesAgo;
 		if(mysql_real_query(db.getHandle(), query.str().c_str(), strlen(query.str().c_str())) == 0){
@@ -239,7 +239,7 @@ void* serviceHandler(void* arg){
 					<< service.getHandlerID()
           << ", node_id = "
           << nodeID
-          << ", reserved_for = NULL, reserved_at = NULL"
+          << ", reserved_for = NULL, reserved_on = NULL"
 					<< " WHERE id = "
 					<< service.getServiceID();
 
@@ -373,10 +373,11 @@ void* serviceChecks(void* arg){
       stringstream query;
       query << "SELECT id FROM services WHERE (reserved_for = "
             << nodeID
-            << " AND TIMEDIFF(reserved_at, NOW()) < '00:00:30') "
+            << " AND TIMEDIFF(reserved_on, NOW()) < '00:00:30') "
                "OR handler = 0 OR lastcheck < "
             << twoMinutesAgo;
-			unsigned int numOfServices = db.getNumOfResults(query.str());
+			
+      unsigned int numOfServices = db.getNumOfResults(query.str());
 			mysql_close(db.getHandle());
 
 			// Start a thread for every service that has no handler yet.
