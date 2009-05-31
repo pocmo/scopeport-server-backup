@@ -102,7 +102,7 @@ unsigned int Cloud::getNumberOfServicesFromNode(unsigned int foreignNodeID, Data
 }
 
 bool Cloud::action_requestServices(unsigned int count, unsigned int from_node, Database db){
-  return storeAction(from_node, "service_request", integerToString(count), Cloud::generateConversationID(), db);
+  return storeAction(from_node, "service_request", integerToString(count), generateConversationID(), db);
 }
 
 bool Cloud::storeAction(unsigned int receiver, string type, string value, unsigned int conversation_id, Database db){
@@ -123,16 +123,8 @@ bool Cloud::storeAction(unsigned int receiver, string type, string value, unsign
    return db.setQuery(db.getHandle(), query.str());
 }
 
-void Cloud::log(string message, Database db){
-  stringstream query;
-  query << "INSERT INTO nodecommunications(sender_id, receiver_id, type, value, timestamp, conversation_id) VALUES("
-        << getOwnID()
-        << ",0,'log_message','"
-        << message
-        << "', NOW(), "
-        << Cloud::generateConversationID()
-        << ")";
-  db.setQuery(db.getHandle(), query.str());
+void Cloud::action_logEvent(string message, Database db){
+  storeAction(0, "log_message", message, generateConversationID(), db);
 }
 
 unsigned int Cloud::generateConversationID(){
@@ -144,7 +136,7 @@ unsigned int Cloud::generateConversationID(){
   unsigned int result;
 
   stringstream conversationID;
-  conversationID << getOwnID() << rand();
+  conversationID << getOwnID() << rand() % 50000;
   result = stringToInteger(conversationID.str());
   return result;
 }

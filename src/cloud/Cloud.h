@@ -34,11 +34,10 @@ class Cloud{
     unsigned int getIdOfNodeWithMostServices(Database db);
     unsigned int getNumberOfServicesFromNode(unsigned int foreignNodeID, Database db);
 
+    void action_logEvent(string message, Database db);
     bool action_requestServices(unsigned int count, unsigned int from_node, Database db);
 
     bool storeAction(unsigned int receiver, string type, string value, unsigned int conversation_id, Database db);
-
-    void log(string message, Database db);
 
     unsigned int getOwnID();
 

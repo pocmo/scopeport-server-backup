@@ -649,7 +649,11 @@ void* cloudServiceManager(void* args){
 
       Cloud cloud(nodeID, dbData);
     
-      // Service balance
+      /*
+       * Service balance
+       *
+       */
+
       // Get number of currently self monitored services.
       static unsigned int ownServices = cloud.getNumberOfOwnServices(db);
       
@@ -677,12 +681,34 @@ void* cloudServiceManager(void* args){
             // Request was sent successful. Log it.
             stringstream logmsg;
             logmsg << "Requested " << numberOfRequestedServices << " services from node " << nodeWithMostServices;
-            cloud.log(logmsg.str(), db);
+            cloud.action_logEvent(logmsg.str(), db);
           }else{
             log.putLog(2, "xxx", "Could not request services from another node: Database error.");
           }
         }
       }
+
+//      // Check if we need to hand over a service.
+//      unsigned int conversationID;
+//      if((conversationID = cloud.checkForServiceHandoverRequest(db)) > 0){
+//        unsigned int numberOfServices = cloud.getNumberOfRequestedServices(conversationID);
+//        unsigned int serviceHandoverRequester = cloud.getNodeIDOfHandoverRequester(conversationID);
+//
+//       // Hand over services.
+//        if(cloud.handOverServices(numberOfServices, serviceHandoverRequester)){
+//          cloud.action_replyServiceRequest(conversationID, 1);
+//          stringstream logmsg;
+//          logmsg << "Accepted: Handing over " << numberOfServices << " services to node " << serviceHandoverRequester;
+//          cloud.action_logEvent(logmsg.str());
+//        }else{
+//          cloud.action_replyServiceRequest(conversationID, 0);
+//          stringstream logmsg;
+//          logmsg << "Denied: Could not hand over services to node " << serviceHandoverRequester << ". General failure.";
+//          cloud.action_logEvent(logmsg.str());
+//        }
+//      }else if(conversationID < 0){
+//        log.putLog(2, "xxx", "Could not check for service handover requests: Database error.");
+//      }
 
       mysql_close(db.getHandle());
     }else{
