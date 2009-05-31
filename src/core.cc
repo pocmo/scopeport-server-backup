@@ -189,7 +189,7 @@ void* serviceHandler(void* arg){
     stringstream query;
     query << "SELECT id FROM services WHERE (reserved_for = "
           << nodeID
-          << " AND TIMEDIFF(reserved_on, NOW()) < '00:00:30') "
+          << " AND TIMEDIFF(reserved_on, NOW()) < '00:01:30') "
              "OR handler = 0 OR lastcheck < "
           << twoMinutesAgo;
 		if(mysql_real_query(db.getHandle(), query.str().c_str(), strlen(query.str().c_str())) == 0){
@@ -373,7 +373,7 @@ void* serviceChecks(void* arg){
       stringstream query;
       query << "SELECT id FROM services WHERE (reserved_for = "
             << nodeID
-            << " AND TIMEDIFF(reserved_on, NOW()) < '00:00:30') "
+            << " AND TIMEDIFF(reserved_on, NOW()) < '00:01:30') "
                "OR handler = 0 OR lastcheck < "
             << twoMinutesAgo;
 			
