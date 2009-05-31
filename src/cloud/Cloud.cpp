@@ -142,7 +142,7 @@ unsigned int Cloud::checkForServiceHandoverRequest(Database db){
            "WHERE type = 'service_request' "
            "AND receiver_id = "
         << getOwnID()
-        << " ORDER BY timestamp DESC "
+        << " AND TIMEDIFF(timestamp, NOW()) < '00:00:15' ORDER BY timestamp DESC "
         << "LIMIT 1";
   string result = db.sGetQuery(query.str());
   if(result == "NULL"){
