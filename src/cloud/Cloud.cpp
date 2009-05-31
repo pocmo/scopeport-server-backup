@@ -159,7 +159,7 @@ unsigned int Cloud::getNumberOfRequestedServices(Database db, unsigned int conve
            "WHERE conversation_id = "
         << conversationID
         << " ORDER BY timestamp DESC"
-        << "LIMIT 1";
+        << " LIMIT 1";
   string result = db.sGetQuery(query.str());
   if(result == "NULL"){
     return 0;
@@ -174,7 +174,7 @@ unsigned int Cloud::getNodeIdOfHandoverRequester(Database db, unsigned int conve
            "FROM nodecommunications "
            "WHERE conversation_id = "
         << conversationID
-        << " ORDER BY timestamp DESC"
+        << " ORDER BY timestamp DESC "
         << "LIMIT 1";
   string result = db.sGetQuery(query.str());
   if(result == "NULL"){
@@ -190,7 +190,7 @@ bool Cloud::handOverServices(unsigned int numberOfServices, unsigned int handove
         << ", reserved_on = NOW() "
            "WHERE node_id = "
         << getOwnID()
-        << "LIMIT " << numberOfServices;
+        << " LIMIT " << numberOfServices;
   return db.setQuery(db.getHandle(), query.str());
 }
 
