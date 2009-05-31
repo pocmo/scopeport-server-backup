@@ -187,7 +187,11 @@ void* serviceHandler(void* arg){
     int twoMinutesAgo = rawtime-120;
 		// Fetch a service to handle.
     stringstream query;
-    query << "SELECT id FROM services WHERE (handler = 0 OR lastcheck < " << twoMinutesAgo << " ) AND disabled = 0 LIMIT 1";
+    query << "SELECT id FROM services WHERE (reserved_for = "
+          << nodeID
+          << " AND TIMEDIFF(reserved_at, NOW()) < '00:00:30') "
+             "OR handler = 0 OR lastcheck < "
+          << twoMinutesAgo;
 		if(mysql_real_query(db.getHandle(), query.str().c_str(), strlen(query.str().c_str())) == 0){
 			// Query successful.
 			MYSQL_ROW serviceResult;
@@ -235,6 +239,7 @@ void* serviceHandler(void* arg){
 					<< service.getHandlerID()
           << ", node_id = "
           << nodeID
+          << ", reserved_for = NULL, reserved_at = NULL"
 					<< " WHERE id = "
 					<< service.getServiceID();
 
@@ -260,7 +265,7 @@ void* serviceHandler(void* arg){
 			stringstream checkService;
 			checkService	<< "SELECT id FROM services WHERE id = "
 							<< service.getServiceID()
-							<< " AND disabled = 0";
+							<< " AND (reserved_for = " << nodeID << " OR reserved_for IS NULL)";
 			unsigned int serviceState = db.getNumOfResults(checkService.str());
 			if(serviceState <= 0){
 				stringstream message;
@@ -366,7 +371,11 @@ void* serviceChecks(void* arg){
       int twoMinutesAgo = rawtime-120;
 			// Get the number of services that have no handler yet.
       stringstream query;
-      query << "SELECT id FROM services WHERE handler = 0 OR lastcheck < " << twoMinutesAgo;
+      query << "SELECT id FROM services WHERE (reserved_for = "
+            << nodeID
+            << " AND TIMEDIFF(reserved_at, NOW()) < '00:00:30') "
+               "OR handler = 0 OR lastcheck < "
+            << twoMinutesAgo;
 			unsigned int numOfServices = db.getNumOfResults(query.str());
 			mysql_close(db.getHandle());
 
@@ -688,27 +697,29 @@ void* cloudServiceManager(void* args){
         }
       }
 
-//      // Check if we need to hand over a service.
-//      unsigned int conversationID;
-//      if((conversationID = cloud.checkForServiceHandoverRequest(db)) > 0){
-//        unsigned int numberOfServices = cloud.getNumberOfRequestedServices(conversationID);
-//        unsigned int serviceHandoverRequester = cloud.getNodeIDOfHandoverRequester(conversationID);
-//
-//       // Hand over services.
-//        if(cloud.handOverServices(numberOfServices, serviceHandoverRequester)){
-//          cloud.action_replyServiceRequest(conversationID, 1);
-//          stringstream logmsg;
-//          logmsg << "Accepted: Handing over " << numberOfServices << " services to node " << serviceHandoverRequester;
-//          cloud.action_logEvent(logmsg.str());
-//        }else{
-//          cloud.action_replyServiceRequest(conversationID, 0);
-//          stringstream logmsg;
-//          logmsg << "Denied: Could not hand over services to node " << serviceHandoverRequester << ". General failure.";
-//          cloud.action_logEvent(logmsg.str());
-//        }
-//      }else if(conversationID < 0){
-//        log.putLog(2, "xxx", "Could not check for service handover requests: Database error.");
-//      }
+      // Check if we need to hand over a service.
+      unsigned int conversationID;
+      if((conversationID = cloud.checkForServiceHandoverRequest(db)) > 0){
+        unsigned int numberOfServices = cloud.getNumberOfRequestedServices(db, conversationID);
+        unsigned int serviceHandoverRequester = cloud.getNodeIdOfHandoverRequester(db, conversationID);
+
+       // Hand over services.
+        if(cloud.handOverServices(numberOfServices, serviceHandoverRequester, db)){
+          if(!cloud.action_replyServiceRequest(serviceHandoverRequester, "1", conversationID, db)){
+            log.putLog(2, "xxx", "Could not reply to service request: Database error.");
+          }
+          stringstream logmsg;
+          logmsg << "Accepted: Handing over " << numberOfServices << " services to node " << serviceHandoverRequester;
+          cloud.action_logEvent(logmsg.str(), db);
+        }else{
+          if(!cloud.action_replyServiceRequest(serviceHandoverRequester, "0", conversationID, db)){
+            log.putLog(2, "xxx", "Could not reply to service request: Database error.");
+          }
+          stringstream logmsg;
+          logmsg << "Denied: Could not hand over services to node " << serviceHandoverRequester << ". General failure.";
+          cloud.action_logEvent(logmsg.str(), db);
+        }
+      }
 
       mysql_close(db.getHandle());
     }else{

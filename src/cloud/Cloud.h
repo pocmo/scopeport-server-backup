@@ -25,19 +25,29 @@ class Cloud{
   private:
     int nodeID;
     mySQLData dbData;
+
     unsigned int generateConversationID();
+    bool storeAction(unsigned int receiver, string type, string value, unsigned int conversation_id, Database db);
 
   public:
     Cloud(int myNodeID, mySQLData myDBData);
     bool updateOwnStatus(Database db);
+
+    // Requesting service handovers.
     unsigned int getNumberOfOwnServices(Database db);
     unsigned int getIdOfNodeWithMostServices(Database db);
     unsigned int getNumberOfServicesFromNode(unsigned int foreignNodeID, Database db);
 
+    // Handling service handover requests addressed to us.
+    unsigned int checkForServiceHandoverRequest(Database db);
+    unsigned int getNumberOfRequestedServices(Database db, unsigned int conversationID);
+    unsigned int getNodeIdOfHandoverRequester(Database db, unsigned int conversationID);
+    bool handOverServices(unsigned int numberOfServices, unsigned int handoverRequester, Database db);
+
+    // Actions.
     void action_logEvent(string message, Database db);
     bool action_requestServices(unsigned int count, unsigned int from_node, Database db);
-
-    bool storeAction(unsigned int receiver, string type, string value, unsigned int conversation_id, Database db);
+    bool action_replyServiceRequest(unsigned int handoverRequester, string status, unsigned int conversationID, Database db);
 
     unsigned int getOwnID();
 

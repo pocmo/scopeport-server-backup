@@ -64,7 +64,10 @@ bool Cloud::updateOwnStatus(Database db){
 	time(&rawtime);
   
   stringstream query;
-  query << "UPDATE nodes SET last_update = " << rawtime << ", consumption = 1 WHERE id = " << nodeID;
+  query << "UPDATE nodes SET last_update = "
+        << rawtime
+        << ", consumption = 1 WHERE id = "
+        << nodeID;
 
   // Perform the query.
   if(db.setQuery(db.getHandle(), query.str())){
@@ -97,7 +100,8 @@ unsigned int Cloud::getIdOfNodeWithMostServices(Database db){
  
 unsigned int Cloud::getNumberOfServicesFromNode(unsigned int foreignNodeID, Database db){
   stringstream query;
-  query << "SELECT id FROM services WHERE node_id = " << foreignNodeID;
+  query << "SELECT id FROM services WHERE node_id = "
+        << foreignNodeID;
   return db.getNumOfResults(query.str());
 }
 
@@ -123,8 +127,71 @@ bool Cloud::storeAction(unsigned int receiver, string type, string value, unsign
    return db.setQuery(db.getHandle(), query.str());
 }
 
+bool Cloud::action_replyServiceRequest(unsigned int handoverRequester, string status, unsigned int conversationID, Database db){
+  return storeAction(handoverRequester, "service_request_response", status, conversationID, db);
+}
+
 void Cloud::action_logEvent(string message, Database db){
   storeAction(0, "log_message", message, generateConversationID(), db);
+}
+
+unsigned int Cloud::checkForServiceHandoverRequest(Database db){
+  stringstream query;
+  query << "SELECT conversation_id "
+           "FROM nodecommunications "
+           "WHERE type = 'service_request' "
+           "AND receiver_id = "
+        << getOwnID()
+        << " ORDER BY timestamp DESC "
+        << "LIMIT 1";
+  string result = db.sGetQuery(query.str());
+  if(result == "NULL"){
+    return 0;
+  }else{
+    return stringToInteger(result);
+  }
+}
+
+unsigned int Cloud::getNumberOfRequestedServices(Database db, unsigned int conversationID){
+  stringstream query;
+  query << "SELECT value "
+           "FROM nodecommunications "
+           "WHERE conversation_id = "
+        << conversationID
+        << " ORDER BY timestamp DESC"
+        << "LIMIT 1";
+  string result = db.sGetQuery(query.str());
+  if(result == "NULL"){
+    return 0;
+  }else{
+    return stringToInteger(result);
+  }
+}
+
+unsigned int Cloud::getNodeIdOfHandoverRequester(Database db, unsigned int conversationID){
+  stringstream query;
+  query << "SELECT sender_id "
+           "FROM nodecommunications "
+           "WHERE conversation_id = "
+        << conversationID
+        << " ORDER BY timestamp DESC"
+        << "LIMIT 1";
+  string result = db.sGetQuery(query.str());
+  if(result == "NULL"){
+    return 0;
+  }else{
+    return stringToInteger(result);
+  }
+}
+
+bool Cloud::handOverServices(unsigned int numberOfServices, unsigned int handoverRequester, Database db){
+  stringstream query;
+  query << "UPDATE services SET reserved_for = " << handoverRequester
+        << ", reserved_on = NOW() "
+           "WHERE node_id = "
+        << getOwnID()
+        << "LIMIT " << numberOfServices;
+  return db.setQuery(db.getHandle(), query.str());
 }
 
 unsigned int Cloud::generateConversationID(){
