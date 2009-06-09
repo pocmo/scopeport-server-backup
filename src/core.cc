@@ -19,20 +19,14 @@
 
 // The database class.
 #include "database/Database.h"
-// Authentication handling.
-#include "conversation/Auth.h"
-// Host blacklist.
-#include "conversation/Blacklist.h"
+// Host handling.
+#include "host/Host.h"
 // Services.
 #include "services/Services.h"
 // Warning conditions.
 #include "notifications/Warning.h"
 // Converting numbers to names etc.
 #include "database/Information.h"
-// This class is used for validating client data.
-#include "conversation/ReadData.h"
-// This class is used for talking to clients.
-#include "conversation/Negotiation.h"
 // This class is used for sending mails.
 #include "notifications/Mail.h"
 // The class for XMPP conversations.
@@ -616,7 +610,7 @@ void* onlineStateChecks(void* arg){
 }
 
 int servSock;
-int clientSock;
+int clientSocket;
 struct sockaddr_in address;
 socklen_t addrlen;
 
@@ -830,7 +824,7 @@ void killClient(int sig){
 	Log log(LOGFILE, dbData);
 	log.putLog(0, "029", "Closed connection to client that did not complete"
 			" transaction after 5 seconds.");
-	close(clientSock);
+	close(clientSocket);
 }
 
 void handleClient(){
@@ -850,12 +844,12 @@ void handleClient(){
 	// Run forever.
 	while(1){
 
-		// Accept connections with new socket "clientSock".
-		clientSock = accept(servSock,(struct sockaddr *) &address, &addrlen);
+		// Accept connections with new socket "clientSocket".
+		clientSocket = accept(servSock,(struct sockaddr *) &address, &addrlen);
 
-		if(clientSock <= 0){
+		if(clientSocket <= 0){
 			log.putLog(1, "030", "Could not accept connection from client.");
-			close(clientSock);
+			close(clientSocket);
 			packageCountERR++;
 			continue;
 		}
@@ -863,485 +857,73 @@ void handleClient(){
 		// Create database object.
 		Database clientDB(dbData);
 
-
 		// Try to open connection to database.
 		if(clientDB.initConnection()){
 			// We are connected to the database.
 
+      Host host(dbData, clientSocket, address);
+
 			// Start the timer. The client now has five seconds to complete transaction. Go.
 			alarm(5);
 
-			// Create negotiation object that allows communicating with the client.
-			Negotiation talk(clientSock, address);
-			// Check if this host is blacklisted.
-			Blacklist blacklist(dbData);
-			// Check if blacklisting is enabled.
-			if(blacklisting){
-				// Blacklisting is enabled. Check if this host is blacklisted.
-				if(!blacklist.checkHost(talk.getCurrentClientIP())){
-					// Host is blacklisted - Notify.
-					packageCountERR++;
-					stringstream logMessage;
-					logMessage	<< "Received package from Blacklisted host \""
-								<< talk.getCurrentClientIP()
-								<< "\". Skipping.";
-					log.putLog(0, "031", logMessage.str());
-					// Reset alarm timer.
-					alarm(0);
-					// Close database connection.
-					mysql_close(clientDB.getHandle());
-					// Close socket.
-					close(clientSock);
-					// Get out of this while cycle to accept the next client.
-					continue;
-				}
-				// Host is not blacklisted. Go on.
-			}
+      // Skip if this host is blacklisted.
+      if(host.isBlacklisted(clientDB)){
+        stringstream logmsg;
+        logmsg << "Blacklisted host "
+               << host.getIPv4Address()
+               << " tried to connect. Blocked.";
+        log.putLog(1, "xxx", logmsg.str());
+        host.refuse("Blacklisted");
+        mysql_close(clientDB.getHandle());
+		    close(clientSocket);
+        continue;
+      }
+      
+      // Wait for host login. Skip if incorrect.
+      if(!host.checkLogin(clientDB)){
+        stringstream logmsg;
+        string errorcode;
+        // Blacklist host.
+        if(host.addToBlacklist(clientDB)){
+          errorcode = "xxx";
+          logmsg << "Host "
+                 << host.getIPv4Address()
+                 << " sent wrong login credentials. Blocked and blacklisted.";
+        }else{
+          errorcode = "xxx";
+          logmsg << "Host "
+                 << host.getIPv4Address()
+                 << " sent wrong login credentials. Blocked. Blacklisting failed..";
+        }
+        log.putLog(3, errorcode, logmsg.str());
+        host.refuse("Login incorrect");
+        mysql_close(clientDB.getHandle());
+		    close(clientSocket);
+        continue;
+      }
 
-			// Create auth object. This keeps the passwords of configured clients.
-			Auth auth(dbData);
-			// Refresh authentication table.
-			if(!auth.loadHosts()){
-				// Could not refreseh authentication table.
-				log.putLog(2, "032", "Could not refresh authentication table.");
-			}
-			// Handshake.
-			if(!talk.performHandshake()){
-				// Handshake failed.
-				packageCountERR++;
-				// Build log message.
-				stringstream handshakeFailMessage;
-				handshakeFailMessage	<< "Handshake with client "
-										<< talk.getCurrentClientIP()
-										<< " failed";
-				log.putLog(1, "033", handshakeFailMessage.str());
-				// Reset alarm timer.
-				alarm(0);
-				// Close database connection.
-				mysql_close(clientDB.getHandle());
-				// Close socket.
-				close(clientSock);
-				// Get out of this while cycle to accept the next client.
-				continue;
-			}
+      // Wait for data.
+      if(!host.getAndStoreData()){
+        stringstream logmsg;
+        logmsg << "Could not receive data from host "
+               << host.getIPv4Address();
+        log.putLog(3, "xxx", logmsg.str());
+        host.refuse("Could not accept your data.");
+        mysql_close(clientDB.getHandle());
+        close(clientSocket);
+        continue;
+      }
 
-			// The handshake has completed successfully.
-			// Wait for STARTTLS if GnuTLS was requested.
-			if(talk.getTLSUsage()){
-				string starttls = talk.recvMessage();
-				if(starttls != "STARTTLS"){
-					packageCountERR++;
-					stringstream handshakeFailMessage;
-					handshakeFailMessage	<< "Handshake with client "
-											<< talk.getCurrentClientIP()
-											<< " failed";
-					log.putLog(1, "034", handshakeFailMessage.str());
-					// Reset alarm timer.
-					alarm(0);
-					// Close database connection.
-					mysql_close(clientDB.getHandle());
-					// Close socket.
-					close(clientSock);
-					// Get out of this while cycle to accept the next client.
-					continue;
-				}
-			}
+      // Reset the alarm timer.
+      alarm(0);
 
-			char buffer[TALKBUFSIZE] = "";
-
-			gnutls_session_t session;
-			if(talk.getTLSUsage()){
-				// Client has chosen to use GNUTLS.
-				// Init TLS session.
-				const int kx_prio[] = { GNUTLS_KX_ANON_DH, 0 };
-				gnutls_init(&session, GNUTLS_SERVER);
-				// Use default priorities.
-				gnutls_set_default_priority(session);
-				gnutls_kx_set_priority(session, kx_prio);
-				gnutls_credentials_set(session, GNUTLS_CRD_ANON, anoncred);
-				gnutls_dh_set_prime_bits(session, DH_BITS);
-				gnutls_transport_set_ptr(session, (gnutls_transport_ptr_t) clientSock);
-
-				// Do TLS handshake.
-				int ret = gnutls_handshake(session);
-				// Did the handshake succeed?
-				if(ret < 0){
-					// No.
-					packageCountERR++;
-					stringstream shakeError;
-					shakeError	<< "TLS handshake with host "
-								<< talk.getCurrentClientIP()
-								<< " failed.";
-					log.putLog(2, "035", shakeError.str());
-					alarm(0);
-					mysql_close(clientDB.getHandle());
-					gnutls_bye(session, GNUTLS_SHUT_WR);
-				    gnutls_deinit(session);
-					close(clientSock);
-					continue;
-				}
-
-				// TLS handshake completed.
-				// Receive data.
-				ret = gnutls_record_recv(session, buffer, TALKBUFSIZE-1);
-				// Is the reveived data valid?
-				if(ret == 0){
-					// Peer has closed the connection.
-					packageCountERR++;
-					alarm(0);
-					gnutls_deinit(session);
-					mysql_close(clientDB.getHandle());
-					close(clientSock);
-					continue;
-				}else if(ret < 0){
-					packageCountERR++;
-					stringstream recvError;
-					recvError	<< "Received invalid TLS package from "
-								<< talk.getCurrentClientIP();
-					log.putLog(1, "036", recvError.str());
-					alarm(0);
-					mysql_close(clientDB.getHandle());
-					gnutls_bye(session, GNUTLS_SHUT_WR);
-				    gnutls_deinit(session);
-					close(clientSock);
-					continue;
-				}
-			}else{
-				// Client does not want TLS encryption.
-				ssize_t len;
-				len = read(clientSock, buffer, TALKBUFSIZE-1);
-
-				// Was something received?
-				if(len <= 0){
-					packageCountERR++;
-					stringstream recvError;
-					recvError	<< "Could not receive unencrypted sensor data from "
-								<< talk.getCurrentClientIP();
-					log.putLog(1, "037", recvError.str());
-					alarm(0);
-					mysql_close(clientDB.getHandle());
-					close(clientSock);
-					continue;
-				}
-				if(len < TALKBUFSIZE){
-					buffer[len] = '\0';
-				}else{
-					packageCountERR++;
-					stringstream recvError;
-					recvError	<< "Could not receive unencrypted sensor data from "
-								<< talk.getCurrentClientIP();
-					log.putLog(1, "038", recvError.str());
-					alarm(0);
-					mysql_close(clientDB.getHandle());
-					close(clientSock);
-					continue;
-				}
-			}
-			stringstream message;
-			message	<< buffer;
-
-			// We now have the sensordata in string message.
-
-			// Stop timeout.
-			alarm(0);
-
-			// Create object that holds the sensordata.
-			ReadData datastream;
-			// Check for validity.
-			if(datastream.inspectStream(message.str())){
-				// Package is valid.
-				// Check if client submitted the correct password.
-				if(datastream.getSt() != "00" && !auth.checkHost(datastream.getHost(),
-						datastream.getPass())){
-					// Wrong password.
-					packageCountERR++;
-					stringstream wrongPasswordMsg;
-					wrongPasswordMsg	<< "Host "
-										<< talk.getCurrentClientIP()
-										<< " sent wrong password. Skipping.";
-					log.putLog(2, "039", wrongPasswordMsg.str());
-					if(blacklisting){
-						// Blacklist host that sent wrong password.
-						stringstream blacklistMsg;
-						blacklistMsg	<< "Adding host \""
-										<< talk.getCurrentClientIP()
-										<< "\" to blacklist!";
-						log.putLog(2, "040", blacklistMsg.str());
-						if(!blacklist.blackHost(talk.getCurrentClientIP()))
-							log.putLog(2, "041", "Could not insert host that sent wrong password into blacklist.");
-					}
-					// Close connection and accept new package in next while() cycle.
-					mysql_close(clientDB.getHandle());
-					if(talk.getTLSUsage()){
-						gnutls_bye(session, GNUTLS_SHUT_WR);
-					    gnutls_deinit(session);
-					}
-					close(clientSock);
-					continue;
-				}
-				// Password is okay.
-
-				// Reset the alarm timer of st 0.
-				stringstream resetZeroTimer;
-				resetZeroTimer << "UPDATE sensor_conditions SET "
-									"lastwarn = 0 WHERE st = 0 "
-									"AND hostid = " << datastream.getHost();
-
-				if(mysql_real_query(clientDB.getHandle(), resetZeroTimer.str().c_str(),
-						strlen(resetZeroTimer.str().c_str())) != 0){
-					// Query was not successful.
-					log.putLog(1, "042", "Could not reset alarm timer.");
-				}
-
-				// Update IP of this host.
-				stringstream queryIP4;
-				queryIP4	<< "UPDATE hosts SET ip4addr = '"
-							<< talk.getCurrentClientIP()
-							<< "' WHERE hostid = "
-							<< datastream.getHost();
-
-				if(!clientDB.setQuery(clientDB.getHandle(), queryIP4.str()))
-					log.putLog(1, "043", "Could not update IP of host in database.");
-
-				// Get information about alarms.
-				string thisLastWarn = clientDB.sGetQuery(Information::getLastWarn(
-													datastream.getHost(),
-													datastream.getSt()));
-
-
-				// Create warning object. This keeps information of
-				// e.g. severity levels of sensors.
-				Warning warning(dbData);
-				// Refresh warning conditions table.
-				if(!warning.getConditions(datastream.getHost(), datastream.getSt())){
-					// Could not refresh warning table.
-					log.putLog(2, "044", "Could not refresh warning conditions table.");
-				}
-
-
-				// Check if sensor value is in range.
-				if(datastream.getSt() != "0" && warning.checkSensor(datastream.getHost(),
-						datastream.getSt(), datastream.getSv(), thisLastWarn) == 0){
-					// Sensor not in range! Warn.
-
-					string thisSensorName = clientDB.sGetQuery(Information::getSensorName(datastream.getSt()));
-					string thisHostName = clientDB.sGetQuery(Information::getHostName(datastream.getHost()));
-					string thisSensorCondition = clientDB.sGetQuery2(Information::getSensorCondition(
-																datastream.getHost(),
-																datastream.getSt()));
-
-					stringstream warningSubj;
-					stringstream warningMsg;
-					bool msgError = 0;
-
-					if(thisSensorName != "NULL" && thisHostName != "NULL"){
-						warningSubj	<< "Warning! Sensor \""
-									<< thisSensorName
-									<< "\" on host \""
-									<< thisHostName
-									<< "\"";
-					}else{
-						warningSubj	<< "Warning! an unknown Sensor "
-									<< "has a bad value.";
-						msgError = 1;
-					}
-
-					if(!msgError && thisSensorName != "NULL" && thisHostName != "NULL"
-							&& thisSensorCondition != "NULL"){
-						// Check if the client could not collect this sensor.
-						if(datastream.getSv() != "-0-"){
-							// The sensor value has been collected correctly.
-							warningMsg	<< "Warning! Sensor \""
-										<< thisSensorName
-										<< "\" on host \""
-										<< thisHostName
-										<< "\" has value "
-										<< datastream.getSv()
-										<< endl << endl
-										<< "Condition to be marked as \"good\": \""
-										<< thisSensorCondition
-										<< "\"";
-						}else{
-							// The sensor could not be collected.
-							warningMsg	<< "Warning! Sensor \""
-										<< thisSensorName
-										<< "\" on host \""
-										<< thisHostName
-										<< "\" could not be collected"
-										<< endl
-										<< endl
-										<< "You can disable the collection of "
-												"this sensor in the configuration "
-												"of your client"
-										<< endl;
-						}
-					}else{
-							warningMsg	<< "Warning! An unknown sensor "
-										<< "has a bad value. I cannot "
-										<< "give more information because "
-										<< "of an error that occured while "
-										<< "fetching sensor information."
-										<< endl
-										<< endl
-										<< "You should manually check your monitored "
-										<< "hosts in the ScopePort interface.";
-					}
-
-					time_t warntime;
-					time(&warntime);
-
-					clientDB.setQuery(clientDB.getHandle(), Information::setLastWarn(warntime, datastream.getHost(),
-									datastream.getSt()));
-
-					// Get mail receivers and send warnings.
-					if(mailData.doMailing){
-						// Create mailing object.
-						Mail mailing(mailData);
-
-						// Check for mailing parameters.
-						if(mailData.doMailing && !mailData.mailServer.empty() > 0 && mailData.mailPort > 0
-								&& !mailData.mailHostname.empty() && !mailData.mailFrom.empty()){
-							// All mailing parameters set correctly.
-							mailData.doMailing = 1;
-						}else{
-							// Parameters missing - Disable mailing.
-							mailData.doMailing = 0;
-						}
-
-						vector<string> mailRecvList;
-						mailRecvList = Information::getMailWarningReceivers(clientDB.getHandle(),
-													clientDB.sGetQuery(Information::getReceiverGroup(
-															datastream.getHost(),
-															datastream.getSt())),
-													clientDB.sGetQuery(Information::getSensorSeverity(
-															datastream.getHost(),
-															datastream.getSt())));
-						// Send a warning mail to every mail receiver.
-						int mailRecvCount = 0;
-						int mailRecvListSize = mailRecvList.size();
-						while(mailRecvCount < mailRecvListSize){
-							if(!mailRecvList[mailRecvCount].empty())
-								mailing.sendMail(mailRecvList[mailRecvCount], warningSubj.str(), warningMsg.str());
-							mailRecvCount++;
-						}
-					}
-
-					// Get XMPP receivers and send warnings.
-					if(xmppData.doXMPP){
-						// Create XMPP object.
-						XMPP xmpp(xmppData, dbData);
-
-						// Check for XMPP parameters.
-						if(xmppData.doXMPP && !xmppData.xmppServer.empty() > 0 && xmppData.xmppPort > 0
-								&& !xmppData.xmppUser.empty() && !xmppData.xmppPass.empty()
-								&& !xmppData.xmppResource.empty()){
-							// All XMPP parameters set correctly.
-							xmppData.doXMPP = 1;
-						}else{
-							// Parameters missing - Disable XMPP.
-							xmppData.doXMPP = 0;
-						}
-
-						vector<string> xmppRecvList;
-						xmppRecvList = Information::getXMPPWarningReceivers(clientDB.getHandle(),
-														clientDB.sGetQuery(Information::getReceiverGroup(
-																datastream.getHost(),
-																datastream.getSt())),
-														clientDB.sGetQuery(Information::getSensorSeverity(
-																datastream.getHost(),
-																datastream.getSt())));
-
-			 			// Send a warning message to every XMPP receiver.
-						int xmppRecvCount = 0;
-						int xmppRecvListSize = xmppRecvList.size();
-						while(xmppRecvCount < xmppRecvListSize){
-							if(!xmppRecvList[xmppRecvCount].empty())
-									xmpp.sendMessage(warningMsg.str(), xmppRecvList[xmppRecvCount]);
-							xmppRecvCount++;
-						}
-					}
-
-					// Get Clickatell Mobile API receivers and send warnings.
-					if(clickatellData.doMobileC && mailData.doMailing){
-
-						vector<string> mobilecRecvList;
-						mobilecRecvList = Information::getMobileCWarningReceivers(clientDB.getHandle(),
-														clientDB.sGetQuery(Information::getReceiverGroup(
-																datastream.getHost(),
-																datastream.getSt())),
-														clientDB.sGetQuery(Information::getSensorSeverity(
-																datastream.getHost(),
-																datastream.getSt())));
-
-						Mail mailing(mailData);
-						int mobilecRecvCount = 0;
-						int mobilecRecvListSize = mobilecRecvList.size();
-						while(mobilecRecvCount < mobilecRecvListSize){
-
-							if(!mobilecRecvList[mobilecRecvCount].empty()){
-
-								// Build the message that fits to the API.
-								stringstream newWarningMsg;
-								newWarningMsg	<< "user:" << clickatellData.username << endl
-												<< "password:" << clickatellData.password << endl
-												<< "api_id:" << clickatellData.apiID << endl
-												<< "to:" << mobilecRecvList[mobilecRecvCount] << endl
-												<< "text: [ScopePort] " << warningMsg.str();
-								mailing.sendMail(CLICKATELLMAIL, warningSubj.str(), newWarningMsg.str());
-							}
-							mobilecRecvCount++;
-						}
-					}
-				}
-
-				// We did not need to warn.
-
-				// Store current stream in database.
-				if(!clientDB.saveStream(datastream.getTimestamp(),datastream.getHost(),
-						datastream.getSt(),datastream.getSv())){
-					stringstream dberror;
-					dberror << "Could not store sensor data in database. ("
-							<< clientDB.getError()
-							<< " / HostID: "
-							<< datastream.getHost()
-							<< ")";
-					log.putLog(2, "045", dberror.str());
-				}
-			}else{
-				// Package was not valid.
-				packageCountERR++;
-				stringstream notgoodmsg;
-				notgoodmsg	<< "Received package from "
-							<< talk.getCurrentClientIP()
-							<< " which was not valid!";
-				log.putLog(2, "046", notgoodmsg.str());
-				// Blacklist host that sent invalid package.
-				if(blacklisting){
-					stringstream blacklistMsg;
-					blacklistMsg	<< "Adding host \""
-									<< talk.getCurrentClientIP()
-									<< "\" to blacklist!";
-					log.putLog(2, "047", blacklistMsg.str());
-					if(datastream.getSt() != "00" && !blacklist.blackHost(talk.getCurrentClientIP()))
-						log.putLog(2, "048", "Could not insert host that sent invalid package into "
-								"blacklist.");
-				}
-			}
-
-			packageCountOK++;
-
-			// Close connections and accept new package in next while() cycle.
-			mysql_close(clientDB.getHandle());
-			if(talk.getTLSUsage()){
-				gnutls_bye(session, GNUTLS_SHUT_WR);
-			    gnutls_deinit(session);
-			}
+      mysql_close(clientDB.getHandle());
 		}else{
 			// Could not connect to database.
 			log.putLog(2, "049", "Client handler: Could not connect to database! "
 					"Sensor package skipped.");
 		}
-		close(clientSock);
+		close(clientSocket);
 	}
 
 	// Not reached.
@@ -1695,19 +1277,19 @@ int main(int argc, char *argv[]){
 
 				addrlen = sizeof(struct sockaddr_in);
 
-// NOT YET WORKING WITH CLOUD
-//				for(int threadCount = 0; threadCount < numProcs; threadCount++){
-//					// Fork client handlers.
-//					pid_t processID;
-//					if((processID = fork()) < 0){
-//						cout << "Could not fork client handlers." << endl;
-//						exit(EXIT_FAILURE);
-//					}else if(processID == 0){
-//						// This is the child process / Forking worked.
-//						clientHandler = 1;
-//						handleClient();
-//					}
-//				}
+        // Fork client handler processes.
+				for(int threadCount = 0; threadCount < numProcs; threadCount++){
+					// Fork client handlers.
+					pid_t processID;
+					if((processID = fork()) < 0){
+						cout << "Could not fork client handlers." << endl;
+						exit(EXIT_FAILURE);
+					}else if(processID == 0){
+						// This is the child process / Forking worked.
+						clientHandler = 1;
+						handleClient();
+					}
+				}
 
 				clientHandler = 0;
 

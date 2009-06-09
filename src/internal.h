@@ -135,6 +135,12 @@ struct enData {
 	int		ID;
 };
 
+struct hostMessage {
+  unsigned int hostID;
+  string type;
+  string value;
+};
+
 // Functions.
 int stringToInteger(string st);
 string integerToString(int i);

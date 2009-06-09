@@ -1,6 +1,6 @@
 // This file is part of ScopePort (Linux server).
 //
-// Copyright 2008 Lennart Koopmann
+// Copyright 2009 Lennart Koopmann
 //
 // ScopePort (Linux server) is free software: you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as published by
@@ -15,37 +15,36 @@
 // You should have received a copy of the GNU General Public License
 // along with ScopePort (Linux server).  If not, see <http://www.gnu.org/licenses/>.
 
-//!  Client blacklist
-/*!
- * Checks and blacklists hosts that want to send sensor data.
-*/
+//! Sending of service warnings, check and storage of response times
 
-#ifndef BLACKLIST_H_
-#define BLACKLIST_H_
+#ifndef HOST_H_
+#define HOST_H_
 
 #include "../internal.h"
 #include "../database/Database.h"
 
-class Blacklist: public Database {
+class Host {
 	private:
-		//! Holds database login information.
 		mySQLData dbData;
-	public:
-		Blacklist(mySQLData myDBData);
-		
-		//! Checks if a given host (IP) is blacklisted.
-		/*!
-		 * \param host The IP that should be checked.
-		 * \return False if blacklisted, true if not blacklisted
-		 */
-		bool checkHost(string host);
-		
-		//! Blacklists a host (IP).
-		/*!
-		 * \param host The IP that should be blacklisted.  
-		 * \return False in case of error, true if blacklisting succeeded.
-		 */		
-		bool blackHost(string host);
+    int socket;
+
+    struct sockaddr_in socketAddress;
+	
+    bool send(string message);
+    string receive();
+    hostMessage parse(string message);
+
+  public:
+		Host(mySQLData myDBData, int mySocket, struct sockaddr_in mySocketAddress);
+
+    string getIPv4Address();
+    void refuse(string reason);
+
+    bool isBlacklisted(Database db);
+    bool addToBlacklist(Database db);
+
+    bool checkLogin(Database db);
+
 };
 
-#endif /*BLACKLIST_H_*/
+#endif /*HOST_H_*/

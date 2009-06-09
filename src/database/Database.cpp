@@ -1,6 +1,6 @@
 // This file is part of ScopePort (Linux server).
 //
-// Copyright 2007, 2008 Lennart Koopmann
+// Copyright 2007, 2008, 2009 Lennart Koopmann
 //
 // ScopePort (Linux server) is free software: you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as published by
@@ -359,4 +359,12 @@ bool Database::saveStream(string timestamp, string host, string st, string sv){
 	}
 
 	return 1;
+}
+
+string Database::escapeString(string escapeMe){
+  stringstream result;
+  char query[escapeMe.length()*2+1];
+  mysql_escape_string(query, escapeMe.c_str(), escapeMe.length());
+  result << query;
+  return result.str();
 }
