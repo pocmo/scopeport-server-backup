@@ -33,18 +33,21 @@ class Host {
     bool send(string message);
     string receive();
     hostMessage parse(string message);
+    bool storeData(Database db);
 
   public:
 		Host(mySQLData myDBData, int mySocket, struct sockaddr_in mySocketAddress);
 
     string getIPv4Address();
     void refuse(string reason);
+    void notify(string reason);
 
     bool isBlacklisted(Database db);
     bool addToBlacklist(Database db);
 
     bool checkLogin(Database db);
 
+    bool receiveAndStoreData(Database db);
 };
 
 #endif /*HOST_H_*/

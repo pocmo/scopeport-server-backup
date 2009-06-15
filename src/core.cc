@@ -877,6 +877,8 @@ void handleClient(){
         mysql_close(clientDB.getHandle());
 		    close(clientSocket);
         continue;
+      }else{
+        host.notify("Okay");
       }
       
       // Wait for host login. Skip if incorrect.
@@ -900,10 +902,12 @@ void handleClient(){
         mysql_close(clientDB.getHandle());
 		    close(clientSocket);
         continue;
+      }else{
+        host.notify("Okay");
       }
 
       // Wait for data.
-      if(!host.getAndStoreData()){
+      if(!host.receiveAndStoreData(clientDB)){
         stringstream logmsg;
         logmsg << "Could not receive data from host "
                << host.getIPv4Address();
@@ -912,7 +916,11 @@ void handleClient(){
         mysql_close(clientDB.getHandle());
         close(clientSocket);
         continue;
+      }else{
+        host.notify("Okay");
       }
+
+      // The data has been stored if we arrive here.
 
       // Reset the alarm timer.
       alarm(0);

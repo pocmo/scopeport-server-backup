@@ -44,6 +44,8 @@ string Host::receive(){
   // Receive.
   len = read(socket, buffer, TALKBUFSIZE-1);
 
+cout << "buff: " << buffer << endl;
+
   // Check if something has been received.
   if(len <= 0){
     return "err";
@@ -72,6 +74,11 @@ void Host::refuse(string reason){
   send("Closing connection (Reason: " + reason + ")");
 }
 
+void Host::notify(string reason){
+cout << "notified: " << reason << endl;
+  send(reason);
+}
+
 hostMessage Host::parse(string message){
   hostMessage result;
   string token;
@@ -97,6 +104,7 @@ hostMessage Host::parse(string message){
 }
 
 bool Host::isBlacklisted(Database db){
+return 0;
   string query = "SELECT 1 FROM blacklisted_hosts WHERE host = '" + getIPv4Address() + "'";
   if(db.getNumOfResults(query) > 0){
     return 1;
@@ -114,6 +122,7 @@ bool Host::addToBlacklist(Database db){
 bool Host::checkLogin(Database db){
   // Get the login request message.
   string msg = receive();
+cout << "checkLogin: " << msg << endl;
   hostMessage request = parse(msg);
 
   // Check if the data is valid.
@@ -125,7 +134,7 @@ bool Host::checkLogin(Database db){
   stringstream query;
   query << "SELECT 1 FROM hosts WHERE id = " << request.hostID
         << " AND password = '" << Database::escapeString(request.value) << "'";
- 
+
   if(db.getNumOfResults(query.str()) == 1){
     return 1;
   }else{
@@ -134,4 +143,13 @@ bool Host::checkLogin(Database db){
 
   return 0;
 }
+
+bool Host::receiveAndStoreData(Database db){
+  // Receive the sensor data.
+  string msg = receive();
+cout << "receiveAndStoreData: " << msg << endl;
+  hostMessage sensor = parse(msg);
+  return 1;
+}
+
 
