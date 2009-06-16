@@ -597,7 +597,6 @@ string Services::readWithTimeout(int socket){
   len = read(socket, checkBuffer, CHECKBUFSIZE-1);
   
   if(len <= 0){
-        cout << "4" << endl;
     return "err-con";
   }
 
@@ -606,7 +605,6 @@ string Services::readWithTimeout(int socket){
 		checkBuffer[len] = '\0';
 	}else{
 		return "err-int";
-        cout << "5" << endl;
 	}
 
   stringstream res;
