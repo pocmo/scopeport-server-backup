@@ -56,6 +56,28 @@ bool clientHandler = 0;
 
 gnutls_anon_server_credentials_t anoncred;
 
+int percentalDifference(int i1, int i2){
+  // Check if there is a difference.
+  if(i1 == i2){
+    return 0;
+  }
+
+  int more = 0;
+  int less = 0;
+
+  // Find out which is the higher value.
+  if(i1 > i2){
+    more = i1;
+    less = i2;
+  }else{
+    more = i2;
+    less = i1;
+  }
+
+  // Return the percental difference.
+  return 100-((less*100)/more);
+}
+
 int stringToInteger(string st){
 	int result;
 	if(stringstream(st) >> result){
@@ -181,10 +203,12 @@ void* serviceHandler(void* arg){
     int twoMinutesAgo = rawtime-120;
 		// Fetch a service to handle.
     stringstream query;
-    query << "SELECT id FROM services WHERE (reserved_for = "
-          << nodeID
-          << " AND TIMEDIFF(reserved_on, NOW()) < '00:01:30') "
-             "OR handler = 0 OR lastcheck < "
+    //query << "SELECT id FROM services WHERE (reserved_for = "
+    //      << nodeID
+    //      << " AND TIMEDIFF(reserved_on, NOW()) < '00:01:30') "
+    //         "OR handler = 0 OR lastcheck < "
+    //      << twoMinutesAgo;
+    query << "SELECT id FROM services WHERE handler = 0 OR lastcheck < "
           << twoMinutesAgo;
 		if(mysql_real_query(db.getHandle(), query.str().c_str(), strlen(query.str().c_str())) == 0){
 			// Query successful.
@@ -258,8 +282,8 @@ void* serviceHandler(void* arg){
 		if(db.initConnection()){
 			stringstream checkService;
 			checkService	<< "SELECT id FROM services WHERE id = "
-							<< service.getServiceID()
-							<< " AND (reserved_for = " << nodeID << " OR reserved_for IS NULL)";
+							<< service.getServiceID();
+            //<< " AND (reserved_for = " << nodeID << " OR reserved_for IS NULL)";
 			unsigned int serviceState = db.getNumOfResults(checkService.str());
 			if(serviceState <= 0){
 				stringstream message;
@@ -298,12 +322,14 @@ void* serviceHandler(void* arg){
       }
     }
 
+
     /*
      * Start the whole procedure again if the first and the second
      * serviceResult are not equal because this is most probably
      * a mismeasurement.
      */
-    if(firstServiceResult != secondServiceResult){
+    if(percentalDifference(firstServiceResult, secondServiceResult) > 10){
+      service.updateStatus(SERVICE_STATE_INTERR);
       sleep(5);
       continue;
     }
@@ -365,12 +391,14 @@ void* serviceChecks(void* arg){
       int twoMinutesAgo = rawtime-120;
 			// Get the number of services that have no handler yet.
       stringstream query;
-      query << "SELECT id FROM services WHERE (reserved_for = "
-            << nodeID
-            << " AND TIMEDIFF(reserved_on, NOW()) < '00:01:30') "
-               "OR handler = 0 OR lastcheck < "
-            << twoMinutesAgo;
-			
+      //query << "SELECT id FROM services WHERE (reserved_for = "
+      //      << nodeID
+      //      << " AND TIMEDIFF(reserved_on, NOW()) < '00:01:30') "
+      //         "OR handler = 0 OR lastcheck < "
+      //      << twoMinutesAgo;
+			query << "SELECT id FROM services WHERE handler = 0 OR lastcheck < "
+            << twoMinutesAgo << " LIMIT 100";
+
       unsigned int numOfServices = db.getNumOfResults(query.str());
 			mysql_close(db.getHandle());
 
@@ -1257,6 +1285,9 @@ int main(int argc, char *argv[]){
 
 		db.setQuery(db.getHandle(), Information::clearHealth(nodeID));
 
+// REMOVE FOR CLOUD
+    db.setQuery(db.getHandle(), "UPDATE services SET handler = 0");
+
 		// Update notification settings.
 		mailData = Mail::fetchSettings(dbData);
 		xmppData = XMPP::fetchSettings(dbData);
@@ -1342,12 +1373,13 @@ int main(int argc, char *argv[]){
 		      exit(EXIT_FAILURE);
 				}
 
-        // Start thread for cloud service management.
-        pthread_t cloudServiceManagerThread;
-				if(pthread_create(&cloudServiceManagerThread, 0, cloudServiceManager, NULL)) {
-					cout << "Terminating: Could not create cloud service management thread." << endl;
-		      exit(EXIT_FAILURE);
-				}
+// RE-ENABLE FOR CLOUD
+//        // Start thread for cloud service management.
+//        pthread_t cloudServiceManagerThread;
+//				if(pthread_create(&cloudServiceManagerThread, 0, cloudServiceManager, NULL)) {
+//					cout << "Terminating: Could not create cloud service management thread." << endl;
+//		      exit(EXIT_FAILURE);
+//				}
 
         if(!Cloud::setTakeoff(nodeID, db)){
           cout << "Terminating: Could not update startup timestamp." << endl;

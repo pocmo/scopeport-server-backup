@@ -76,7 +76,7 @@ unsigned int Services::getHandlerID(){
 	return handlerID;
 }
 
-unsigned int Services::getMaximumResponse(){
+int Services::getMaximumResponse(){
 	return maximumResponse;
 }
 
@@ -138,10 +138,11 @@ int Services::checkService(int run){
 	struct sockaddr_in server;
 	struct hostent *host;
 
-  /* Store the response time of the first run in responseTime1
+  /* 
+   * Store the response time of the first run in responseTime1
    * and the second run in responseTime2.
    */
-  unsigned int *p_responseTime;
+  int *p_responseTime;
   if(run == 1){
     p_responseTime = &m_responseTime1;
   }else{
@@ -179,10 +180,8 @@ int Services::checkService(int run){
 	Timer t;
 	t.startTimer();
 	int res = connect(sock, (struct sockaddr *) &server, sizeof server);
-	*p_responseTime = t.stopTimer();
 
   int valopt; 
-  struct sockaddr_in addr; 
   fd_set myset; 
   struct timeval tv; 
   socklen_t lon; 
@@ -213,15 +212,17 @@ int Services::checkService(int run){
     }
   }
 
+	*p_responseTime = t.stopTimer();
+
   // We are connected! Set socket back to blocking mode.
   arg = fcntl(sock, F_GETFL, NULL); 
   arg &= (~O_NONBLOCK); 
   fcntl(sock, F_SETFL, arg); 
 
-
   if(serviceType == "none"){
 		// This service needs no protocol check.
   	// Service is running if we arrived here.
+    close(sock);
 	  return SERVICE_STATE_OKAY;
 	}else if(serviceType == "smtp"){
 		*p_responseTime = checkSMTP(sock);
@@ -243,6 +244,19 @@ int Services::checkService(int run){
 
   close(sock);
 
+  // Check if there was an error in the protocol check.
+  switch(*p_responseTime){
+      case -1:
+        return SERVICE_STATE_CONFAIL;
+        break;
+      case -2:
+        return SERVICE_STATE_TIMEOUT;
+        break;
+      case -3:
+        return SERVICE_STATE_INTERR;
+        break;
+  }
+
   // The service is running if we arrived here.
 	return SERVICE_STATE_OKAY;
 }
@@ -257,7 +271,6 @@ bool Services::buildAverageResponseTime(){
 
 void Services::updateStatus(int status){
   m_status = status;
-
 	Database db(dbData);
 	Log log(LOGFILE, dbData);
 	if(initConnection()){
@@ -575,64 +588,83 @@ bool Services::storeResponseTime(){
 
 #define CHECKBUFSIZE 1024
 
-int Services::checkSMTP(int sock){
-
-	int ms = 1;
-
+string Services::readWithTimeout(int socket){
 	// Our buffer.
 	char checkBuffer[CHECKBUFSIZE];
 
 	// Will hold the length of the reply.
 	int len;
+  len = read(socket, checkBuffer, CHECKBUFSIZE-1);
+  
+  if(len <= 0){
+        cout << "4" << endl;
+    return "err-con";
+  }
+
+  // Terminate the string if the reply was not too long.
+	if(len < CHECKBUFSIZE){
+		checkBuffer[len] = '\0';
+	}else{
+		return "err-int";
+        cout << "5" << endl;
+	}
+
+  stringstream res;
+  res << checkBuffer;
+
+  return res.str();
+}
+
+int Services::checkSMTP(int sock){
+
+	int ms = 1;
 
 	// The message to send to the server.
 	const char* message = "EHLO example.org\n\r\n\r";
 
+  int len = 0;
+
 	// Send the message.
 	if((len = send(sock,message,strlen(message),0)) <= 0)
-		return 0;
+		return -1;
 
 	Timer t;
 
 	t.startTimer();
 
-	// Read the answer and keep the length of the reply.
-	if((len = read(sock,checkBuffer,CHECKBUFSIZE-1)) <= 0)
-		return 0;
+  string reply;
+
+	// Read the answer.
+  if((reply = readWithTimeout(sock)) == "err"){
+    if(reply == "err-con"){
+      return -1;
+    }else if(reply == "err-time"){
+      return -2;
+    }else{
+		  return -3;
+    }
+  }
 
 	ms = t.stopTimer();
+  
 	// Quit message to close the connection.
 	const char* quitMessage = "QUIT";
 
 	// Send the quit message.
 	if((len = send(sock,quitMessage,strlen(quitMessage),0)) <= 0)
-		return 0;
-
-	// Terminate the string if the reply was not too long.
-	if(len < CHECKBUFSIZE){
-		checkBuffer[len] = '\0';
-	}else{
-		return 0;
-	}
-
-	// Make it easier for us to substr().
-	stringstream reply;
-	reply << checkBuffer;
+		return -1;
 
 	// If the first three chars are "220", there is a SMTP server running.
-	if(reply.str().substr(0,3) == "220")
+	if(reply.substr(0,3) == "220")
 		return ms;
 
 	// The first three chars of the reply were not "220". No SMTP server running.
-	return 0;
+	return -1;
 }
 
 int Services::checkHTTP(int sock){
 
 	int ms = 1;
-
-	// Our buffer.
-	char checkBuffer[CHECKBUFSIZE];
 
 	// Will hold the length of the reply.
 	int len;
@@ -641,83 +673,70 @@ int Services::checkHTTP(int sock){
 
 	// Send the message.
 	if((len = send(sock,message,strlen(message),0)) <= 0)
-		return 0;
+		return -1;
 
 	Timer t;
 
 	t.startTimer();
 
-	// Read the answer and keep the length of the reply.
-	if((len = read(sock,checkBuffer,CHECKBUFSIZE-1)) <= 0)
-		return 0;
+  string reply;
+
+	// Read the answer.
+  if((reply = readWithTimeout(sock)) == "err"){
+    if(reply == "err-con"){
+      return -1;
+    }else if(reply == "err-time"){
+      return -2;
+    }else{
+		  return -3;
+    }
+  }
 
 	ms = t.stopTimer();
 
-	// Terminate the string if the reply was not too long.
-	if(len < CHECKBUFSIZE){
-		checkBuffer[len] = '\0';
-	}else{
-		return 0;
-	}
-
-	// Make it easier for us to substr().
-	stringstream reply;
-	reply << checkBuffer;
-
 	// If the first five chars are "HTTP/", there is a HTTP server running.
-	if(reply.str().substr(0,5) == "HTTP/")
+	if(reply.substr(0,5) == "HTTP/")
 		return ms;
 
 	// The first five chars of the reply were not "HTTP/". No HTTP server running.
-	return 0;
+	return -1;
 }
 
 int Services::checkIMAP(int sock){
 
 	int ms = 1;
 
-	// Our buffer.
-	char checkBuffer[CHECKBUFSIZE];
-
-	// Will hold the length of the reply.
-	int len;
-
 	Timer t;
 
 	t.startTimer();
 
-	// Read the answer and keep the length of the reply.
-	if((len = read(sock,checkBuffer,CHECKBUFSIZE-1)) <= 0)
-		return 0;
+  string reply;
+
+	// Read the answer.
+  if((reply = readWithTimeout(sock)) == "err"){
+    if(reply == "err-con"){
+      return -1;
+    }else if(reply == "err-time"){
+      return -2;
+    }else{
+		  return -3;
+    }
+  }
 
 	ms = t.stopTimer();
 
-	// Terminate the string if the reply was not too long.
-	if(len < CHECKBUFSIZE){
-		checkBuffer[len] = '\0';
-	}else{
-		return 0;
-	}
-
-	// Make it easier for us to substr().
-	stringstream reply;
-	reply << checkBuffer;
-
 	// If the first four chars are "* OK", there is an IMAP server running.
-	if(reply.str().substr(0,4) == "* OK")
+	if(reply.substr(0,4) == "* OK")
 		return ms;
 
 	// The first four chars of the reply were not "* OK". No IMAP server running.
-	return 0;
+	return -1;
 }
 
 int Services::checkPOP3(int sock){
 
 	int ms = 1;
 
-	// Our buffer.
-	char checkBuffer[CHECKBUFSIZE];
-
 	// Will hold the length of the reply.
 	int len;
 
@@ -725,9 +744,18 @@ int Services::checkPOP3(int sock){
 
 	t.startTimer();
 
-	// Read the answer and keep the length of the reply.
-	if((len = read(sock,checkBuffer,CHECKBUFSIZE-1)) <= 0)
-		return 0;
+  string reply;
+
+	// Read the answer.
+  if((reply = readWithTimeout(sock)) == "err"){
+    if(reply == "err-con"){
+      return -1;
+    }else if(reply == "err-time"){
+      return -2;
+    }else{
+		  return -3;
+    }
+  }
 
 	ms = t.stopTimer();
 
@@ -736,64 +764,45 @@ int Services::checkPOP3(int sock){
 
 	// Send the quit message.
 	if((len = send(sock,message,strlen(message),0)) <= 0)
-		return 0;
-
-	// Terminate the string if the reply was not too long.
-	if(len < CHECKBUFSIZE){
-		checkBuffer[CHECKBUFSIZE-1] = '\0';
-	}else{
-		return 0;
-	}
-
-	// Make it easier for us to substr().
-	stringstream reply;
-	reply << checkBuffer;
+		return -1;
 
 	// If the first three chars are "* OK", there is an POP3 server running.
-	if(reply.str().substr(0,3) == "+OK")
+	if(reply.substr(0,3) == "+OK")
 		return ms;
 
 	// The first three chars of the reply were not "+OK". No POP3 server running.
-	return 0;
+	return -1;
 }
 
 int Services::checkSSH(int sock){
 
 	int ms = 1;
-
-	// Our buffer.
-	char checkBuffer[CHECKBUFSIZE];
-
-	// Will hold the length of the reply.
-	int len;
-
-	Timer t;
+	
+  Timer t;
 
 	t.startTimer();
 
-	// Read the answer and keep the length of the reply.
-	if((len = read(sock,checkBuffer, CHECKBUFSIZE-1)) <= 0)
-		return 0;
+  string reply;
+
+	// Read the answer.
+  if((reply = readWithTimeout(sock)) == "err"){
+    if(reply == "err-con"){
+      return -1;
+    }else if(reply == "err-time"){
+      return -2;
+    }else{
+		  return -3;
+    }
+  }
 
 	ms = t.stopTimer();
 
-	// Terminate the string if the reply was not too long.
-	if(len < CHECKBUFSIZE){
-		checkBuffer[len] = '\0';
-	}else{
-		return 0;
-	}
-
-	// Make it easier for us to substr().
-	stringstream reply;
-	reply << checkBuffer;
-
 	// If the first three chars are "SSH", there is an SSH server running.
-	if(reply.str().substr(0,3) == "SSH")
+	if(reply.substr(0,3) == "SSH")
 		return ms;
 
 	// The first three chars of the reply were not "SSH". No SSH server running.
-	return 0;
+	return -1;
 }
 
 int Services::checkFTP(int sock){
@@ -809,65 +818,54 @@ int Services::checkFTP(int sock){
 	 */
 
 	int ms = 1;
-
-	// Our buffer.
-	char checkBuffer[CHECKBUFSIZE];
-
-	// Will hold the length of the reply.
 	int len;
 
 	Timer t;
-
 	t.startTimer();
 
-	// Read the answer and keep the length of the reply.
-	if((len = read(sock,checkBuffer, CHECKBUFSIZE-1)) <= 0)
-		return 0;
+  string reply;
+
+	// Read the answer.
+  if((reply = readWithTimeout(sock)) == "err"){
+    if(reply == "err-con"){
+      return -1;
+    }else if(reply == "err-time"){
+      return -2;
+    }else{
+		  return -3;
+    }
+  }
 
 	ms = t.stopTimer();
 
-	// Terminate the string if the reply was not too long.
-	if(len < CHECKBUFSIZE){
-		checkBuffer[len] = '\0';
-	}else{
-		return 0;
-	}
-
-	// Make it easier for us to substr().
-	stringstream reply;
-	reply << checkBuffer;
-
 	// If the first three chars are "220", there could be a FTP server running.
-	if(reply.str().substr(0,3) != "220")
-		return 0;
+	if(reply.substr(0,3) != "220")
+		return -1;
 
 	len = 0;
+  reply = "";
 
 	// Try to login to make sure there is a FTP server running.
 	const char* testLoginMessage = "USER scopeport-service-check\n";
 
 	// Send the quit message.
 	if((len = send(sock,testLoginMessage,strlen(testLoginMessage),0)) <= 0)
-		return 0;
+		return -1;
 
-	// Read the answer and keep the length of the reply.
-	if((len = read(sock,checkBuffer, CHECKBUFSIZE-1)) <= 0)
-		return 0;
-
-	// Terminate the string if the reply was not too long.
-	if(len < CHECKBUFSIZE){
-		checkBuffer[CHECKBUFSIZE-1] = '\0';
-	}else{
-		return 0;
-	}
-
-	// Make it easier for us to substr().
-	stringstream reply2;
-	reply2 << checkBuffer;
+	// Read the answer.
+  if((reply = readWithTimeout(sock)) == "err"){
+    if(reply == "err-con"){
+      return -1;
+    }else if(reply == "err-time"){
+      return -2;
+    }else{
+		  return -3;
+    }
+  }
 
 	// If the first three chars are "331", there is a FTP server running.
-	if(reply2.str().substr(0,3) != "331")
-		return 0;
+	if(reply.substr(0,3) != "331")
+		return -1;
 
 	const char* quitMessage = "QUIT\n";
 
@@ -877,3 +875,4 @@ int Services::checkFTP(int sock){
 	// All tests performed. There is a FTP server running.
 	return ms;
 }
+

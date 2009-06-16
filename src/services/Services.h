@@ -33,10 +33,10 @@ class Services : public Database {
 		unsigned int	serviceID;
 		unsigned int	port;
 		unsigned int	allowedFails;
-		unsigned int	m_responseTime1;
-		unsigned int	m_responseTime2;
-		unsigned int	responseTime;
-		unsigned int	maximumResponse;
+		int	m_responseTime1;
+		int	m_responseTime2;
+		int	responseTime;
+		int	maximumResponse;
     unsigned int  timeout;
     unsigned int  m_status;
 
@@ -44,6 +44,8 @@ class Services : public Database {
 		string 			serviceType;
 		string			notiGroup;
 		string			hostname;
+
+    string readWithTimeout(int socket);
 
 	public:
 		Services(mySQLData myDBData, unsigned int myHandlerID);
@@ -60,7 +62,7 @@ class Services : public Database {
 
 		unsigned int getServiceID();
 		unsigned int getHandlerID();
-		unsigned int getMaximumResponse();
+		int getMaximumResponse();
     unsigned int getTimeout();
 
     bool updateSettings();
