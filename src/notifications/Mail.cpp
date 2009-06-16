@@ -117,6 +117,7 @@ bool Mail::sendMail(string toMail, string subject, string mailText){
 
 	struct sockaddr_in server;
 	struct hostent *host;
+
 	// Create socket.
 	sock = socket(AF_INET, SOCK_STREAM, 0);
 	if(sock < 0){
@@ -152,7 +153,7 @@ bool Mail::sendMail(string toMail, string subject, string mailText){
 		stringstream ehlo;
 		ehlo	<< "EHLO "
 				<< mailData.mailHostname
-				<< endl;
+        << "\r\n";
 
 		if(!send_socket(ehlo.str()))
 			return 0;
@@ -160,21 +161,21 @@ bool Mail::sendMail(string toMail, string subject, string mailText){
 		if(!read_socket())
 			return 0;
 		// Ask for AUTH LOGIN.
-		if(!send_socket("AUTH LOGIN\n"))
+		if(!send_socket("AUTH LOGIN\r\n"))
 			return 0;
 		if(!read_socket())
 			return 0;
 		// Send username.
 		if(!send_socket(encodeBase64(mailData.mailUser)))
 			return 0;
-		if(!send_socket("\n"))
+		if(!send_socket("\r\n"))
 			return 0;
 		if(!read_socket())
 			return 0;
 		// Send Password.
 		if(!send_socket(encodeBase64(mailData.mailPass)))
 			return 0;
-		if(!send_socket("\n"))
+		if(!send_socket("\r\n"))
 			return 0;
 		if(!read_socket())
 			return 0;
@@ -183,7 +184,7 @@ bool Mail::sendMail(string toMail, string subject, string mailText){
 		stringstream helo;
 		helo	<< "HELO "
 				<< mailData.mailHostname
-				<< endl;
+        << "\r\n";
 
 		if(!send_socket(helo.str()))
 			return 0;
@@ -196,8 +197,7 @@ bool Mail::sendMail(string toMail, string subject, string mailText){
 	stringstream mailFrom;
 	mailFrom	<< "Mail from: <"
 				<< mailData.mailFrom
-				<< ">"
-				<< endl;
+				<< ">\r\n";
 
 	if(!send_socket(mailFrom.str()))
 		return 0;
@@ -208,8 +208,7 @@ bool Mail::sendMail(string toMail, string subject, string mailText){
 	stringstream mailTo;
 	mailTo	<< "RCPT to: <"
 				<< toMail
-				<< ">"
-				<< endl;
+				<< ">\r\n";
 
 	if(!send_socket(mailTo.str()))
 		return 0;
@@ -217,7 +216,7 @@ bool Mail::sendMail(string toMail, string subject, string mailText){
 		return 0;
 
 	// Data.
-	if(!send_socket("DATA\n"))
+	if(!send_socket("DATA\r\n"))
 		return 0;
 	if(!read_socket())
 		return 0;
@@ -226,21 +225,21 @@ bool Mail::sendMail(string toMail, string subject, string mailText){
 	stringstream headerTo;
 	headerTo	<< "to: "
 				<< toMail
-				<< endl;
+        << "\r\n";
 	if(!send_socket(headerTo.str()))
 		return 0;
 
 	stringstream headerFrom;
 	headerFrom	<< "from: "
 				<< mailData.mailFrom
-				<< endl;
+        << "\r\n";
 	if(!send_socket(headerFrom.str()))
 		return 0;
 
 	stringstream headerSubject;
 	headerSubject	<< "subject: [ScopePort] "
 					<< subject
-					<< endl << endl;
+					<< "\r\n\r\n";
 	if(!send_socket(headerSubject.str()))
 		return 0;
 	if(!send_socket(mailText))
@@ -252,7 +251,7 @@ bool Mail::sendMail(string toMail, string subject, string mailText){
 	if(!read_socket())
 		return 0;
 
-	if(!send_socket("QUIT\n"))
+	if(!send_socket("QUIT\r\n"))
 		return 0;
 
 	if(!read_socket())
