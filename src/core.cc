@@ -208,7 +208,7 @@ void* serviceHandler(void* arg){
     //      << " AND TIMEDIFF(reserved_on, NOW()) < '00:01:30') "
     //         "OR handler = 0 OR lastcheck < "
     //      << twoMinutesAgo;
-    query << "SELECT id FROM services WHERE handler = 0 OR lastcheck < "
+    query << "SELECT id FROM services WHERE handler = 0 OR handler IS NULL OR lastcheck < "
           << twoMinutesAgo;
 		if(mysql_real_query(db.getHandle(), query.str().c_str(), strlen(query.str().c_str())) == 0){
 			// Query successful.
@@ -396,7 +396,7 @@ void* serviceChecks(void* arg){
       //      << " AND TIMEDIFF(reserved_on, NOW()) < '00:01:30') "
       //         "OR handler = 0 OR lastcheck < "
       //      << twoMinutesAgo;
-			query << "SELECT id FROM services WHERE handler = 0 OR lastcheck < "
+			query << "SELECT id FROM services WHERE handler = 0 OR handler = NULL OR lastcheck < "
             << twoMinutesAgo << " LIMIT 100";
 
       unsigned int numOfServices = db.getNumOfResults(query.str());
