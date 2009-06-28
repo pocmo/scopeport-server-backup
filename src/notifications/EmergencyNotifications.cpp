@@ -204,13 +204,13 @@ int EmergencyNotifications::sendMessage(int recvNum){
 		return 1;
 	}else if(info.type == "mail"){
 		// We need to send an email.
-		Mail mailing(mailData);
+		Mail mailing(mailData, dbData);
 		if(!mailing.sendMail(info.address, "An emergency has been declared", message.str()))
 			return -1;
 		return 1;
 	}else if(info.type == "mobilec"){
 		// We need to send an SMS via the Clickatell SMTP API.
-		Mail mailing(mailData);
+		Mail mailing(mailData, dbData);
 		// Build the message that fits to the API.
 		stringstream newMessage;
 		newMessage	<< "user:" << clickatellData.username << endl

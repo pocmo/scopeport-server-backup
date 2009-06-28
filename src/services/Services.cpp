@@ -334,7 +334,7 @@ void Services::sendWarning(){
 		mobilecData = Clickatell::fetchSettings(dbData);
 
 		// Create mailing object.
-		Mail mailing(mailData);
+		Mail mailing(mailData, dbData);
 
 		// Check for mailing parameters.
 		if(mailData.doMailing && !mailData.mailServer.empty() > 0 && mailData.mailPort > 0

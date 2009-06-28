@@ -173,4 +173,10 @@ bool numOnly(string checkMe);
 #define SERVICE_STATE_INTERR -1
 #define SERVICE_STATE_TIMEOUT 4
 
+// Conversation debugging
+#define CONV_DEBUG_DIRECTION_SENT 0
+#define CONV_DEBUG_DIRECTION_RECV 1
+#define CONV_DEBUG_ERROR_SENT "Sending the message failed"
+#define CONV_DEBUG_ERROR_RECV "Nothing was received"
+
 #endif /*INTERNAL_H_*/

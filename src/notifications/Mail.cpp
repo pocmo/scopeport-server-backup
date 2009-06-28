@@ -19,8 +19,9 @@
 #include "../internal.h"
 #include "../database/Database.h"
 
-Mail::Mail(mailingData myMailData){
+Mail::Mail(mailingData myMailData, mySQLData myDBData){
 	mailData = myMailData;
+  dbData = myDBData;
 }
 
 void Mail::updateSettings(mailingData myMailData){
@@ -29,22 +30,34 @@ void Mail::updateSettings(mailingData myMailData){
 
 int sock;
 
-bool send_socket(string msg){
+bool Mail::sendSocket(string msg){
 	ssize_t len;
 	len = write(sock,msg.c_str(),strlen(msg.c_str()));
-	if(len <= 0)
+	if(len <= 0){
+    p_debug->log(CONV_DEBUG_DIRECTION_SENT, CONV_DEBUG_ERROR_SENT);
 		return 0;
+  }
+  p_debug->log(CONV_DEBUG_DIRECTION_SENT, noNewLineS(msg));
 	return 1;
 }
 
 #define MAILBUFSIZE 1024
 
-bool read_socket(){
+bool Mail::readSocket(){
 	ssize_t len;
-	char mailBuf[MAILBUFSIZE];
+	char mailBuf[MAILBUFSIZE] = "";
 	len = read(sock,mailBuf, MAILBUFSIZE-1);
-	if(len <= 0)
+  
+	if(len <= 0){
+    p_debug->log(CONV_DEBUG_DIRECTION_RECV, CONV_DEBUG_ERROR_RECV);
 		return 0;
+  }
+
+  // Terminate the buffer.
+  mailBuf[MAILBUFSIZE-1] = '\0';
+
+  p_debug->log(CONV_DEBUG_DIRECTION_RECV, noNewLine(mailBuf, strlen(mailBuf)));
+
 	return 1;
 }
 
@@ -142,10 +155,13 @@ bool Mail::sendMail(string toMail, string subject, string mailText){
 		return 0;
 	}
 
-	// A little bit Conversation.
+	// A little bit conversation.
+  
+  ConversationDebug debug(dbData, "smtp", mailData.mailServer);
+  p_debug = &debug;
 
 	// Welcome string.
-	if(!read_socket())
+	if(!readSocket())
 		return 0;
 
 	if(mailData.mailUseAuth){
@@ -155,29 +171,29 @@ bool Mail::sendMail(string toMail, string subject, string mailText){
 				<< mailData.mailHostname
         << "\r\n";
 
-		if(!send_socket(ehlo.str()))
+		if(!sendSocket(ehlo.str()))
 			return 0;
 		// Get reply.
-		if(!read_socket())
+		if(!readSocket())
 			return 0;
 		// Ask for AUTH LOGIN.
-		if(!send_socket("AUTH LOGIN\r\n"))
+		if(!sendSocket("AUTH LOGIN\r\n"))
 			return 0;
-		if(!read_socket())
+		if(!readSocket())
 			return 0;
 		// Send username.
-		if(!send_socket(encodeBase64(mailData.mailUser)))
+		if(!sendSocket(encodeBase64(mailData.mailUser)))
 			return 0;
-		if(!send_socket("\r\n"))
+		if(!sendSocket("\r\n"))
 			return 0;
-		if(!read_socket())
+		if(!readSocket())
 			return 0;
 		// Send Password.
-		if(!send_socket(encodeBase64(mailData.mailPass)))
+		if(!sendSocket(encodeBase64(mailData.mailPass)))
 			return 0;
-		if(!send_socket("\r\n"))
+		if(!sendSocket("\r\n"))
 			return 0;
-		if(!read_socket())
+		if(!readSocket())
 			return 0;
 	}else{
 		// HELO.
@@ -186,10 +202,10 @@ bool Mail::sendMail(string toMail, string subject, string mailText){
 				<< mailData.mailHostname
         << "\r\n";
 
-		if(!send_socket(helo.str()))
+		if(!sendSocket(helo.str()))
 			return 0;
 		// Get reply.
-		if(!read_socket())
+		if(!readSocket())
 			return 0;
 	}
 
@@ -199,9 +215,9 @@ bool Mail::sendMail(string toMail, string subject, string mailText){
 				<< mailData.mailFrom
 				<< ">\r\n";
 
-	if(!send_socket(mailFrom.str()))
+	if(!sendSocket(mailFrom.str()))
 		return 0;
-	if(!read_socket())
+	if(!readSocket())
 		return 0;
 
 	// Recipient.
@@ -210,15 +226,15 @@ bool Mail::sendMail(string toMail, string subject, string mailText){
 				<< toMail
 				<< ">\r\n";
 
-	if(!send_socket(mailTo.str()))
+	if(!sendSocket(mailTo.str()))
 		return 0;
-	if(!read_socket())
+	if(!readSocket())
 		return 0;
 
 	// Data.
-	if(!send_socket("DATA\r\n"))
+	if(!sendSocket("DATA\r\n"))
 		return 0;
-	if(!read_socket())
+	if(!readSocket())
 		return 0;
 
 	// Header.
@@ -226,35 +242,35 @@ bool Mail::sendMail(string toMail, string subject, string mailText){
 	headerTo	<< "to: "
 				<< toMail
         << "\r\n";
-	if(!send_socket(headerTo.str()))
+	if(!sendSocket(headerTo.str()))
 		return 0;
 
 	stringstream headerFrom;
 	headerFrom	<< "from: "
 				<< mailData.mailFrom
         << "\r\n";
-	if(!send_socket(headerFrom.str()))
+	if(!sendSocket(headerFrom.str()))
 		return 0;
 
 	stringstream headerSubject;
 	headerSubject	<< "subject: [ScopePort] "
 					<< subject
 					<< "\r\n\r\n";
-	if(!send_socket(headerSubject.str()))
+	if(!sendSocket(headerSubject.str()))
 		return 0;
-	if(!send_socket(mailText))
+	if(!sendSocket(mailText))
 		return 0;
-	if(!send_socket("\n\n.\n"))
+	if(!sendSocket("\n\n.\n"))
 		return 0;
 
 	// Quit.
-	if(!read_socket())
+	if(!readSocket())
 		return 0;
 
-	if(!send_socket("QUIT\r\n"))
+	if(!sendSocket("QUIT\r\n"))
 		return 0;
 
-	if(!read_socket())
+	if(!readSocket())
 		return 0;
 
 	// Close socket.

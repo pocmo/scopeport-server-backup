@@ -1,6 +1,6 @@
 // This file is part of ScopePort (Linux server).
 //
-// Copyright 2008 Lennart Koopmann
+// Copyright 2008, 2009 Lennart Koopmann
 //
 // ScopePort (Linux server) is free software: you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as published by
@@ -25,13 +25,20 @@
 #define MAIL_H_
 
 #include "../internal.h"
+#include "../log/ConversationDebug.h"
 
 class Mail{
 	private:
 		//! Holds login, server and general SMTP information.
 		mailingData mailData;
+    mySQLData dbData;
+
+    ConversationDebug* p_debug;
+
+    bool readSocket();
+    bool sendSocket(string msg);
 	public:
-		Mail(mailingData myMailData);
+		Mail(mailingData myMailData, mySQLData myDBData);
 		//! Updates mailData
 		/*!
 		 * \sa mailData

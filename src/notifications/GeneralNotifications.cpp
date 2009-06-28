@@ -78,7 +78,7 @@ bool GeneralNotifications::sendMessages(string subject, string message){
 	if(!fallback && initConnection()){
 		MYSQL* init = getHandle();
 
-		Mail mailing(mailData);
+		Mail mailing(mailData, dbData);
 
 		XMPP xmpp(xmppData, dbData);
 
@@ -142,7 +142,7 @@ bool GeneralNotifications::sendMessages(string subject, string message){
 		
 		message = message + " (This message has been sent in fallback mode!)";
 		if(mailData.doMailing){
-			Mail mailing(mailData);
+			Mail mailing(mailData, dbData);
 			mailing.sendMail(mailData.fallbackReceiver, subject, message);
 		}
 		
@@ -152,7 +152,7 @@ bool GeneralNotifications::sendMessages(string subject, string message){
 		}
 		
 		if(clickatellData.doMobileC && mailData.doMailing){
-			Mail mailing(mailData);
+			Mail mailing(mailData, dbData);
 			// Build the message that fits to the API.  
 			stringstream newWarningMsg;
 			newWarningMsg	<< "user:" << clickatellData.username << endl

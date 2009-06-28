@@ -553,7 +553,7 @@ void* onlineStateChecks(void* arg){
 
 								// Get mail receivers and send warnings.
 								if(mailData.doMailing){
-									Mail mailing(mailData);
+									Mail mailing(mailData, dbData);
 									vector<string> mailRecvList;
 									mailRecvList = Information::getMailWarningReceivers(db.getHandle(),
 																db.sGetQuery(Information::getReceiverGroup(row[0], "0")),
@@ -593,7 +593,7 @@ void* onlineStateChecks(void* arg){
 											db.sGetQuery(Information::getReceiverGroup(row[0],"0")),
 											db.sGetQuery(Information::getSensorSeverity(row[0], "0")));
 
-									Mail mailing(mailData);
+									Mail mailing(mailData, dbData);
 									int mobilecRecvCount = 0;
 									int mobilecRecvListSize = mobilecRecvList.size();
 									while(mobilecRecvCount < mobilecRecvListSize){
