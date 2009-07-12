@@ -24,10 +24,36 @@ ConversationDebug::ConversationDebug(mySQLData myDBData, string myMethod, string
   method = myMethod;
   remoteHost = myRemoteHost;
 
+  disabled = checkIfDisabledForThisMethod();
   create();
 }
 
+bool ConversationDebug::checkIfDisabledForThisMethod(){
+  stringstream query;
+  query << "SELECT ";
+
+  if(method == "smtp"){
+    query << "conversation_logging_smtp";
+  }else if(method == "xmpp"){
+    query << "conversation_logging_xmpp";
+  }else{
+    return 1;
+  }
+
+  query << " FROM settings ORDER BY id DESC LIMIT 1";
+
+  if(initConnection()){
+    string result = sGetQuery(query.str());
+    mysql_close(getHandle());
+    if(result == "1") { return 0; }
+  }
+
+  return 1;
+}
+
 void ConversationDebug::create(){
+  if(disabled) { return; }  
+
   static timeval tv;
   static timeval tv2;
   static struct timezone tz;
@@ -46,11 +72,14 @@ void ConversationDebug::create(){
 
   if(initConnection()){
     setQuery(getHandle(), query.str());
+    mysql_close(getHandle());
   }
 }
 
 
 void ConversationDebug::log(unsigned int direction, string message){
+  if(disabled) { return; }  
+
   stringstream query;
   query << "INSERT INTO conversationmessages(conversation_id, direction, message, created_at) VALUES("
         << conversationID
@@ -61,6 +90,7 @@ void ConversationDebug::log(unsigned int direction, string message){
         << "', NOW())";
   if(initConnection()){
     setQuery(getHandle(), query.str());
+    mysql_close(getHandle());
   }
 }
 

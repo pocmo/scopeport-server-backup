@@ -26,8 +26,10 @@ class ConversationDebug : public Database {
     unsigned int conversationID;
     string method;
     string remoteHost;
+    bool disabled;
 
     void create();
+    bool checkIfDisabledForThisMethod();
 	public:
     ConversationDebug(mySQLData myDBData, string myMethod, string myRemoteHost);
 
