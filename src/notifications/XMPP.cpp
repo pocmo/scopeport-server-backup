@@ -28,24 +28,36 @@ void XMPP::updateSettings(XMPPData myXMPPData){
 	xmppData = myXMPPData;
 }
 
-#define XMPPBUFSIZE 1024
-
-char xmppBuf[XMPPBUFSIZE];
 int xmppSock;
 
-bool sendXMPP(string msg){
+bool XMPP::sendSocket(string msg){
 	ssize_t len;
 	len = write(xmppSock,msg.c_str(),strlen(msg.c_str()));
-	if(len <= 0)
+	if(len <= 0){
+    p_debug->log(CONV_DEBUG_DIRECTION_SENT, CONV_DEBUG_ERROR_SENT);
 		return 0;
+  }
+  p_debug->log(CONV_DEBUG_DIRECTION_SENT, noNewLineS(msg));
 	return 1;
 }
 
-bool readXMPP(){
+#define XMPPBUFSIZE 1024
+char buffer[XMPPBUFSIZE] = "";
+
+bool XMPP::readSocket(){
 	ssize_t len;
-	len = read(xmppSock,xmppBuf,XMPPBUFSIZE-1);
-	if(len <= 0)
+	len = read(xmppSock,buffer, XMPPBUFSIZE-1);
+  
+	if(len <= 0){
+    p_debug->log(CONV_DEBUG_DIRECTION_RECV, CONV_DEBUG_ERROR_RECV);
 		return 0;
+  }
+
+  // Terminate the buffer.
+  buffer[XMPPBUFSIZE-1] = '\0';
+
+  p_debug->log(CONV_DEBUG_DIRECTION_RECV, noNewLine(buffer, strlen(buffer)));
+
 	return 1;
 }
 
@@ -82,12 +94,16 @@ bool XMPP::sendMessage(string myMessage, string receiver){
 
 	struct sockaddr_in address;
 	if((xmppSock = socket(AF_INET, SOCK_STREAM,0)) > 0){
+
 		// Socket created.
 		address.sin_family = AF_INET;
 		address.sin_port = htons(xmppData.xmppPort);
 		address.sin_addr.s_addr = resolveName((char*) xmppData.xmppServer.c_str());
 		if(connect(xmppSock,(struct sockaddr *) &address, sizeof(address)) == 0){
 			// Connected to server.
+
+      ConversationDebug debug(dbData, "xmpp", xmppData.xmppServer);
+      p_debug = &debug;
 
 			stringstream message;
 			stringstream reply;
@@ -98,7 +114,7 @@ bool XMPP::sendMessage(string myMessage, string receiver){
 					<< "' xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams'>" << endl;
 
 			// Send stream initialization.
-			if(!sendXMPP(message.str())){
+			if(!sendSocket(message.str())){
 				close(xmppSock);
 				return 0;
 			}
@@ -112,19 +128,19 @@ bool XMPP::sendMessage(string myMessage, string receiver){
 					<< "' id='auth1'><query xmlns='jabber:iq:auth'/></iq>" << endl;
 
 			// Send iq request.
-			if(!sendXMPP(message.str())){
+			if(!sendSocket(message.str())){
 				close(xmppSock);
 				return 0;
 			}
 
 			// Read reply.
-			if(!readXMPP()){
+			if(!readSocket()){
 				close(xmppSock);
 				return 0;
 			}
 
 			// See if an error occured.
-			reply << xmppBuf;
+			reply << buffer;
 			if(reply.str().find("<stream:error>", 0) != string::npos){
 
 				// There was an error. Abort.
@@ -155,19 +171,19 @@ bool XMPP::sendMessage(string myMessage, string receiver){
 					<< endl;
 
 			// Send login message.
-			if(!sendXMPP(message.str())){
+			if(!sendSocket(message.str())){
 				close(xmppSock);
 				return 0;
 			}
 
 			// Read reply.
-			if(!readXMPP()){
+			if(!readSocket()){
 				close(xmppSock);
 				return 0;
 			}
 
 			// See if an error occured.
-			reply << xmppBuf;
+			reply << buffer;
 
 			if(reply.str().find("<error", 0) != string::npos){
 				// There was an error. Abort.
@@ -198,18 +214,18 @@ bool XMPP::sendMessage(string myMessage, string receiver){
 					<< "</body></message>"
 					<< endl;
 
-			if(!sendXMPP(message.str())){
+			if(!sendSocket(message.str())){
 				close(xmppSock);
 				return 0;
 			}
 
-			if(!readXMPP()){
+			if(!readSocket()){
 				close(xmppSock);
 				return 0;
 			}
 
 			// See if an error occurred.
-			reply << xmppBuf;
+			reply << buffer;
 
 			if(reply.str().find("<error", 0) != string::npos){
 				// There was an error. Abort.
@@ -224,7 +240,7 @@ bool XMPP::sendMessage(string myMessage, string receiver){
 			}
 
 			// Close this session.
-			sendXMPP("</stream>");
+			sendSocket("</stream>");
 
 			close(xmppSock);
 			return 1;

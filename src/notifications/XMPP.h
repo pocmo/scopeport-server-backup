@@ -25,6 +25,7 @@
 #define XMPP_H_
 
 #include "../internal.h"
+#include "../log/ConversationDebug.h"
 
 class XMPP{
 	private:
@@ -33,6 +34,12 @@ class XMPP{
 
 		//! Holds login and connection information of MySQL database.
 		mySQLData dbData;
+
+    ConversationDebug* p_debug;
+    
+    bool sendSocket(string msg);
+    bool readSocket();
+
 	public:
 		XMPP(XMPPData xmppData, mySQLData myDBData);
 
