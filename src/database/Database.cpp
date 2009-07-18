@@ -197,7 +197,7 @@ string Database::sGetQuery2(string query){
 }
 
 bool Database::clearSensorData(){
-	const char* query = "DELETE FROM sensorvalues WHERE TIMEDIFF(CURRENT_TIMESTAMP, created_at) < '730:00:00'";
+	const char* query = "DELETE FROM sensorvalues WHERE TIMEDIFF(CURRENT_TIMESTAMP, created_at) > '730:00:00'";
 
 	if(mysql_real_query(init, query, strlen(query)) == 0){
 		// Query successful.
