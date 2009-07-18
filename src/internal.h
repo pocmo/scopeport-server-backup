@@ -157,7 +157,7 @@ bool numOnly(string checkMe);
 #define PIDFILE "/var/run/scopeportserver.pid"
 
 // The buffer for client communication.
-#define TALKBUFSIZE 1024
+#define TALKBUFSIZE 2048
 
 // The email adress of the Clickatell SMS gateway.
 #define CLICKATELLMAIL "sms@messaging.clickatell.com"
@@ -172,6 +172,10 @@ bool numOnly(string checkMe);
 #define SERVICE_STATE_OKAYTIME 2
 #define SERVICE_STATE_INTERR -1
 #define SERVICE_STATE_TIMEOUT 4
+
+// Sensor types
+#define SENSOR_TYPE_SENSORDATA 0
+#define SENSOR_TYPE_PROFILEDATA 1
 
 // Conversation debugging
 #define CONV_DEBUG_DIRECTION_SENT 0

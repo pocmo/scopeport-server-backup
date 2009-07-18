@@ -38,13 +38,11 @@ bool Host::send(string message){
 }
 
 string Host::receive(){
-  char buffer[TALKBUFSIZE];
+  char buffer[TALKBUFSIZE] = "";
   ssize_t len;
 
   // Receive.
   len = read(socket, buffer, TALKBUFSIZE-1);
-
-cout << "buff: " << buffer << endl;
 
   // Check if something has been received.
   if(len <= 0){
@@ -75,7 +73,6 @@ void Host::refuse(string reason){
 }
 
 void Host::notify(string reason){
-cout << "notified: " << reason << endl;
   send(reason);
 }
 
@@ -122,7 +119,6 @@ bool Host::addToBlacklist(Database db){
 bool Host::checkLogin(Database db){
   // Get the login request message.
   string msg = receive();
-cout << "checkLogin: " << msg << endl;
   hostMessage request = parse(msg);
 
   // Check if the data is valid.
@@ -147,9 +143,43 @@ cout << "checkLogin: " << msg << endl;
 bool Host::receiveAndStoreData(Database db){
   // Receive the sensor data.
   string msg = receive();
-cout << "receiveAndStoreData: " << msg << endl;
-  hostMessage sensor = parse(msg);
-  return 1;
+
+  // Check if the messsage was received successfully.
+  if(msg == "err"){
+    return 0;
+  }
+
+  hostMessage sensorData = parse(msg);
+  
+  string query = generateQuery(sensorData);
+
+  if(query == "err"){
+    return 0;
+  }
+
+  return db.setQuery(db.getHandle(), query);
 }
 
+string Host::generateQuery(hostMessage sensorData){
+  string table;
+  stringstream values;
+
+  int type = SENSOR_TYPE_SENSORDATA;
+
+  if(type == SENSOR_TYPE_SENSORDATA){
+    table = "sensorvalues(host_id, name, value, created_at)";
+    values << sensorData.hostID
+           << ", '"
+           << Database::escapeString(sensorData.type)
+           << "', '"
+           << Database::escapeString(sensorData.value)
+           << "', NOW()";
+  }else if(type == SENSOR_TYPE_PROFILEDATA){
+    
+  }else{
+    return "err";
+  }
+
+  return "INSERT INTO " + table + " VALUES( " + values.str() + ")";
+}
 

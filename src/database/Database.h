@@ -118,16 +118,6 @@ class Database {
 		 */
 		bool	clearServiceData();
 
-		//! Stores received sensordata in database.
-		/*!
-		 * \param timestamp The timestamp of when the package was received.
-		 * \param host The host ID of the transmitting host.
-		 * \param st Sensor type ID
-		 * \param sv Sensor value
-		 * \return True if data has been stored, false in case of error.
-		 */
-		bool	saveStream(string timestamp, string host, string st, string sv);
-
 		//! Returns the MySQL handle.
 		/*!
 		 * \sa init

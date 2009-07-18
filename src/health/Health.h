@@ -39,7 +39,7 @@ class Health{
 		//! Returns the size of some database tables or the whole database.  
 		/*!
 		 * \param dbData Database login information. 
-		 * \param type What size to get. 1: Total database size, 2: Size of table "sensordata", 3: Size of table "servicedata".
+		 * \param type What size to get. 1: Total database size, 2: Size of table "sensorrecords", 3: Size of table "servicerecords".
 		 * \return Size in Megabyte
 		 */ 
 		static	double	getDBSize(mySQLData dbData, int type);

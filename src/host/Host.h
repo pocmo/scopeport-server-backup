@@ -33,7 +33,7 @@ class Host {
     bool send(string message);
     string receive();
     hostMessage parse(string message);
-    bool storeData(Database db);
+    string generateQuery(hostMessage sensorData);
 
   public:
 		Host(mySQLData myDBData, int mySocket, struct sockaddr_in mySocketAddress);

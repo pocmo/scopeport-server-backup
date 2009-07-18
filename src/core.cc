@@ -904,6 +904,8 @@ void handleClient(){
         host.refuse("Blacklisted");
         mysql_close(clientDB.getHandle());
 		    close(clientSocket);
+        // Reset the alarm timer.
+        alarm(0);
         continue;
       }else{
         host.notify("Okay");
@@ -929,6 +931,8 @@ void handleClient(){
         host.refuse("Login incorrect");
         mysql_close(clientDB.getHandle());
 		    close(clientSocket);
+        // Reset the alarm timer.
+        alarm(0);
         continue;
       }else{
         host.notify("Okay");
@@ -937,12 +941,14 @@ void handleClient(){
       // Wait for data.
       if(!host.receiveAndStoreData(clientDB)){
         stringstream logmsg;
-        logmsg << "Could not receive data from host "
+        logmsg << "Could not receive and store data from host "
                << host.getIPv4Address();
         log.putLog(3, "xxx", logmsg.str());
-        host.refuse("Could not accept your data.");
+        host.refuse("Could not accept and store your data.");
         mysql_close(clientDB.getHandle());
         close(clientSocket);
+        // Reset the alarm timer.
+        alarm(0);
         continue;
       }else{
         host.notify("Okay");

@@ -118,8 +118,8 @@ double Health::getDBSize(mySQLData dbData, int type){
 							totalSize = totalSize+stringToInteger(row[6])+stringToInteger(row[8]);
 							break;
 						case 2:
-							// Only return size of table sensordata.
-							if(strcmp(row[0], "sensordata") == 0){
+							// Only return size of table sensorvalues.
+							if(strcmp(row[0], "sensorvalues") == 0){
 								// Return data length + index length.
 								mysql_free_result(res);
 								mysql_close(init);
@@ -127,7 +127,7 @@ double Health::getDBSize(mySQLData dbData, int type){
 							}
 							break;
 						case 3:
-							// Only return size of table servicedata.
+							// Only return size of table servicerecords.
 							if(strcmp(row[0], "servicerecords") == 0){
 								// Return data length + index length.
 								mysql_free_result(res);

@@ -152,8 +152,8 @@ class Information{
 		 * \param packetsOK The number of packages this process successful received.
 		 * \param packetsERR The number of packages this process refused or failed to handle.
 		 * \param dbTotalSize Total size of database (Megabyte)
-		 * \param dbSensorSize Size of "sensordata" table (Megabyte)
-		 * \param dbServiceSize Size of "servicedata" table (Megabyte)
+		 * \param dbSensorSize Size of "sensorvalues" table (Megabyte)
+		 * \param dbServiceSize Size of "servicerecords" table (Megabyte)
 		 * \sa clearHealth()
 		 * \return Query
 		 */
