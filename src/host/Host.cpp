@@ -157,7 +157,38 @@ bool Host::receiveAndStoreData(Database db){
     return 0;
   }
 
+  if(getSensorType(sensorData) == SENSOR_TYPE_SENSORDATA){
+    if(!db.setQuery(db.getHandle(), generateDeletionQueryForRecentData(sensorData))
+        || !db.setQuery(db.getHandle(), generateQueryForRecentData(sensorData))){
+      return 0;
+    }
+  }
+
   return db.setQuery(db.getHandle(), query);
+}
+
+int Host::getSensorType(hostMessage sensorData){
+  return SENSOR_TYPE_SENSORDATA;
+}
+
+string Host::generateQueryForRecentData(hostMessage sensorData){
+  stringstream query;
+  query << "INSERT INTO recentsensorvalues(host_id, name, value, created_at) "
+        << "VALUES("
+        << sensorData.hostID
+        << ", '"
+        << Database::escapeString(sensorData.type)
+        << "', '"
+        << Database::escapeString(sensorData.value)
+        << "', NOW())";
+  return query.str();
+}
+
+string Host::generateDeletionQueryForRecentData(hostMessage sensorData){
+  stringstream query;
+  query << "DELETE FROM recentsensorvalues WHERE host_id = " << sensorData.hostID
+        << " AND name = '" << Database::escapeString(sensorData.type) << "'";
+  return query.str();
 }
 
 string Host::generateQuery(hostMessage sensorData){

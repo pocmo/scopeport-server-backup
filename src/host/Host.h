@@ -34,6 +34,9 @@ class Host {
     string receive();
     hostMessage parse(string message);
     string generateQuery(hostMessage sensorData);
+    int getSensorType(hostMessage sensorData);
+    string generateQueryForRecentData(hostMessage sensorData);
+    string generateDeletionQueryForRecentData(hostMessage sensorData);
 
   public:
 		Host(mySQLData myDBData, int mySocket, struct sockaddr_in mySocketAddress);
