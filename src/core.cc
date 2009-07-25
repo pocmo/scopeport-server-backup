@@ -798,56 +798,6 @@ void* maintenanceThread(void* args){
 	return (NULL);
 }
 
-void* messageMonkey(void* args) {
-
-	Log log(LOGFILE, dbData);
-
-	while(1){
-		// Emergency notifications.
-		EmergencyNotifications en(dbData, mailData, xmppData, clickatellData);
-
-		int res = en.fetchTasks();
-
-		// See if there are emergency notifications to send.
-		if(res == 1){
-			// We need to send emergency notifications.
-			int i = 0;
-			int listSize = en.getListSize();
-			while(i < listSize){
-				res = en.sendMessage(i);
-				if(res == 0){
-					log.putLog(2, "023", "Error while semding emergency notification - "
-									"Retry scheduled.");
-					// There was an error. But we will try again next run.
-					if(!en.markReceiver(i, 0))
-						log.putLog(2, "024", "Could not update status of emergency receiver");
-				}else if(res < 0){
-					log.putLog(2, "025", "Error while semding emergency notification. - "
-									"No retry scheduled.");
-					// There was an critical error. We will not try again.
-					if(!en.markReceiver(i, -1))
-						log.putLog(2, "026", "Could not update status of emergency receiver");
-				}else if(res == 1){
-					// Everything went fine.
-					if(!en.markReceiver(i, 1))
-						log.putLog(2, "027", "Could not update status of emergency receiver");
-				}
-				i++;
-			}
-		}else if(res < 0){
-			// Error.
-			log.putLog(2, "028", "Could not send emergency notifications. Retry in one minute.");
-		}
-
-		// Run every minute.
-		sleep(60);
-	}
-
-	// Not reached.
-
-	return (NULL);
-}
-
 void killClient(int sig){
 	Log log(LOGFILE, dbData);
 	log.putLog(0, "029", "Closed connection to client that did not complete"
@@ -1363,14 +1313,6 @@ int main(int argc, char *argv[]){
 					cout << "Terminating: Could not create maintenance thread." << endl;
 		      exit(EXIT_FAILURE);
 				}
-
-// NOT YET WORKING WITH CLOUD
-//				// Start thread that sends asynchronous messages.
-//				pthread_t messageThread;
-//				if(pthread_create(&messageThread, 0, messageMonkey, NULL)) {
-//					cout << "Terminating: Could not create message thread." << endl;
-//		      exit(EXIT_FAILURE);
-//				}
 
         // Start thread for cloud status updating.
         pthread_t cloudStatusThread;
