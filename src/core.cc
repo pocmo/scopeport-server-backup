@@ -325,10 +325,10 @@ void* serviceHandler(void* arg){
 
     /*
      * Start the whole procedure again if the first and the second
-     * serviceResult are not equal because this is most probably
+     * serviceResult are too far away from each other because this is most probably
      * a mismeasurement.
      */
-    if(percentalDifference(firstServiceResult, secondServiceResult) > 10){
+    if(percentalDifference(firstServiceResult, secondServiceResult) > 80){
       service.updateStatus(SERVICE_STATE_INTERR);
       sleep(5);
       continue;
