@@ -209,11 +209,11 @@ bool Database::clearSensorData(){
 }
 
 bool Database::clearServiceData(){
-	unsigned int yesterday = (time(NULL)-(86400*31));
+	unsigned int lastmonth = (time(NULL)-(86400*31));
 
 	stringstream query;
 	query	<< "DELETE FROM servicerecords WHERE timestamp < ";
-	query	<< yesterday;
+	query	<< lastmonth;
 
 	if(mysql_real_query(init, query.str().c_str(), strlen(query.str().c_str())) == 0){
 		// Query successful.
