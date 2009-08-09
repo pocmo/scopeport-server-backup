@@ -209,7 +209,7 @@ bool Database::clearSensorData(){
 }
 
 bool Database::clearServiceData(){
-	unsigned int yesterday = time(NULL)-86400;
+	unsigned int yesterday = (time(NULL)-86400)*31;
 
 	stringstream query;
 	query	<< "DELETE FROM servicerecords WHERE timestamp < ";
