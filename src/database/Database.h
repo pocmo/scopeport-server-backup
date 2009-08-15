@@ -63,14 +63,6 @@ class Database {
 		//! Constructor. Converts sqlData values to single variables.
 		Database(mySQLData sqlData);
 
-		//! Checks if tables defined in vector<string> tables exist.
-		/*!
-		 * \sa checkTables()
-		 * \sa tables
-		 * \return False if not all tables were found or another error occured, true if all tables were found.
-		 */
-		bool	checkTables();
-
 		//! Opens connection to MySQL server
 		/*!
 		 * \return False if connection could not be established or creating the handle failed, true if connected to database.
