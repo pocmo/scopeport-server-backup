@@ -40,6 +40,8 @@ class Log : public Database {
 		 * \param logmsg The message that should be logged.
 		 */
 		void putLog(int severity, string errorcode, string logmsg);
+
+    static void debug(bool debug, string msg);
 };
 
 #endif /*LOG_H_*/

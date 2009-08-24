@@ -51,7 +51,6 @@
 
 using namespace std;
 
-
 // Configuration structs.
 
 //! Struct: Holds login and connection information of MySQL database.

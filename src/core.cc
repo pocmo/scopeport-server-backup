@@ -15,8 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with ScopePort (Linux server).  If not, see <http://www.gnu.org/licenses/>.
 
-#include "internal.h"
-
 // The database class.
 #include "database/Database.h"
 // Host handling.
@@ -44,11 +42,15 @@
 // The cloud/clustering methods.
 #include "cloud/Cloud.h"
 
+#include "internal.h"
+
 
 mySQLData dbData;
 mailingData mailData;
 XMPPData xmppData;
 mobilecData clickatellData;
+
+bool debug = 0;
 
 unsigned int nodeID = 0;
 
@@ -183,6 +185,7 @@ unsigned long resolveName(char* server){
 }
 
 void* serviceHandler(void* arg){
+  Log::debug(debug, "serviceHandler(): Started.");
 	Log log(LOGFILE, dbData);
 	Database db(dbData);
 
@@ -194,10 +197,15 @@ void* serviceHandler(void* arg){
   gettimeofday(&tv2, &tz);
   unsigned int handlerID = tv.tv_usec * 3;
 
+  stringstream handlerIDStringS;
+  handlerIDStringS << handlerID;
+  string handlerIDString = handlerIDStringS.str();
+
 	Services service(dbData, handlerID);
 
 	// Try to establish a database connection.
 	if(db.initConnection()){
+    Log::debug(debug, "serviceHandler() " + handlerIDString + ": Connected to database.");
     time_t rawtime;
     time(&rawtime);
     int twoMinutesAgo = rawtime-120;
@@ -211,14 +219,17 @@ void* serviceHandler(void* arg){
     query << "SELECT id FROM services WHERE handler = 0 OR handler IS NULL OR lastcheck < "
           << twoMinutesAgo;
 		if(mysql_real_query(db.getHandle(), query.str().c_str(), strlen(query.str().c_str())) == 0){
+      Log::debug(debug, "serviceHandler() " + handlerIDString + ": Initial query succeeded.");
 			// Query successful.
 			MYSQL_ROW serviceResult;
 			MYSQL_RES* res = mysql_store_result(db.getHandle());
 			serviceResult = mysql_fetch_row(res);
 			if(mysql_num_rows(res) > 0){
         // We fetched a service to handle.
+        Log::debug(debug, "serviceHandler() " + handlerIDString + ": A service to handle has been fetched.");
 				if(serviceResult[0] == NULL){
 					// We got NULL fields.
+          Log::debug(debug, "serviceHandler() " + handlerIDString + ": ID is NULL. Terminating this thread.");
 					mysql_free_result(res);
 					mysql_close(db.getHandle());
 					return arg;
@@ -230,13 +241,16 @@ void* serviceHandler(void* arg){
         // Initially fill with settings. This will be repeated before every check.
         if(!service.updateSettings()){
           // Could not store the response time.
+          Log::debug(debug, "serviceHandler() " + handlerIDString + ": Could not initially set service settings.");
           log.putLog(2, "xxx", "Could not initially set service settings.");
           service.updateStatus(SERVICE_STATE_INTERR);
 					mysql_free_result(res);
 					mysql_close(db.getHandle());
 					return arg;
         }
+        Log::debug(debug, "serviceHandler() " + handlerIDString + ": Service setings have been set initially.");
 			}else{
+        Log::debug(debug, "serviceHandler() " + handlerIDString + ": No service to handle found. Terminating this thread.");
 				// No services have been fetched.
 				mysql_free_result(res);
 				mysql_close(db.getHandle());
@@ -244,6 +258,7 @@ void* serviceHandler(void* arg){
 			}
 			mysql_free_result(res);
 		}else{
+      Log::debug(debug, "serviceHandler() " + handlerIDString + ": Could not fetch service to handle. Terminating this thread.");
 			log.putLog(2, "2000", "Could not fetch service to handle.");
 			mysql_close(db.getHandle());
 			return arg;
@@ -262,15 +277,19 @@ void* serviceHandler(void* arg){
 					<< service.getServiceID();
 
 		if(!db.setQuery(db.getHandle(), announce.str())){
+      Log::debug(debug, "serviceHandler() " + handlerIDString + ": Could not announce handling of this service.");
 			log.putLog(2, "3000", "Could not update service handler.");
 			mysql_close(db.getHandle());
 			return arg;
 		}
+      
+    Log::debug(debug, "serviceHandler() " + handlerIDString + ": Handling of this service announced.");
 
 		mysql_close(db.getHandle());
 
 	}else{
 		// Could not establish a database connection. Close this thread.
+    Log::debug(debug, "serviceHandler() " + handlerIDString + ": Could not establish connection to database. Terminating this thread.");
 		return arg;
 	}
 
@@ -279,7 +298,9 @@ void* serviceHandler(void* arg){
 	// Run forever
 	while(1){
 		// Check if this service is still wanted to be checked for.
+    Log::debug(debug, "serviceHandler() " + handlerIDString + ": Entered checking loop.");
 		if(db.initConnection()){
+      Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Connected to database.");
 			stringstream checkService;
 			checkService	<< "SELECT id FROM services WHERE id = "
 							<< service.getServiceID();
@@ -289,25 +310,34 @@ void* serviceHandler(void* arg){
 				stringstream message;
 				message	<< "Closing service handler #" << service.getHandlerID()
 						<< " as it is not needed anymore.";
+        Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Closing service handler because serviceState is <= 0. Terminating this thread.");
 				log.putLog(0, "NOTICE", message.str());
 				mysql_close(db.getHandle());
 				return arg;
 			}
 			mysql_close(db.getHandle());
 		}else{
+      Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Could not connect to database. Retry in 30 seconds.");
       log.putLog(2, "xxx", "Could not check if service still needs to be checked (Database error). Retry in 30 seconds.");
       sleep(30);
       continue;
 		}
 
+    Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: We still want to check this service.");
+    Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Updating service settings.");
+
     // Update settings.
     if(!service.updateSettings()){
       // Could not store the response time.
+      Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Could not update service settings. Retry in 30 seconds..");
       log.putLog(2, "xxx", "Could not update service settings. Retry in 30 seconds.");
       service.updateStatus(SERVICE_STATE_INTERR);
       sleep(30);
       continue;
     }
+
+    Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Service settings updated.");
+    Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Starting check.");
 
 		// Check service twice and build an average response time.
     int serviceResult = SERVICE_STATE_INTERR;
@@ -317,8 +347,18 @@ void* serviceHandler(void* arg){
 		  serviceResult = service.checkService(run);
       if(run == 0){
         firstServiceResult = serviceResult;
+        if(debug){
+          stringstream srss;
+          srss << firstServiceResult;
+          Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Check result I: " + srss.str());
+        }
       }else{
         secondServiceResult = serviceResult;
+        if(debug){
+          stringstream srss;
+          srss << secondServiceResult;
+          Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Check result II: " + srss.str());
+        }
       }
     }
 
@@ -328,24 +368,35 @@ void* serviceHandler(void* arg){
      * serviceResult are too far away from each other because this is most probably
      * a mismeasurement.
      */
+    Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Calculating percental difference of firstServiceResult and secondServiceResult");
     if(percentalDifference(firstServiceResult, secondServiceResult) > 80){
+      Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Percental difference is higher than 80 percent. Setting status SERVICE_STATE_INTERR and starting next check in five seconds.");
       service.updateStatus(SERVICE_STATE_INTERR);
       sleep(5);
       continue;
     }
 
+    Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Checking if the measured response time is higher than the defined maximum.");
+
     // Find out if the response time was too high.
     if(service.checkResponseTime() == 0){
+      Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Measured respone time is too high! Setting status to SERVICE_STATE_OKAYTIME.");
       // Mark service with "Too high response time"
       serviceResult = SERVICE_STATE_OKAYTIME;
+    }else{
+      Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Measured respone time is not too high!");
     }
 
     // Update the service status.
+    Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Updating status.");
     service.updateStatus(serviceResult);
+
+    Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Storing response time.");
 
     // Store the response time in the database.
     if(!service.storeResponseTime()){
       // Could not store the response time.
+      Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Could not store response time. Retry in 30 seconds.");
       log.putLog(2, "008", "Could not update service response time. Retry in 30 seconds.");
       service.updateStatus(SERVICE_STATE_INTERR);
       sleep(30);
@@ -361,16 +412,20 @@ void* serviceHandler(void* arg){
 			 * The method will find out if the response time was too high
 			 * or if the service is just down/not reachable.
 			 */
+      Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Sending warnings.");
 			service.sendWarning();
 		}else if(serviceResult == SERVICE_STATE_INTERR){
 			/*
 			 * The service could not be checked because an internal error occured.
 			 * Send a general warning!
 			 */
+      Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Sending general notifications because serviceResult is SERVICE_STATE_INTERR");
 			GeneralNotifications gn(dbData, mailData, xmppData, clickatellData);
 			gn.sendMessages("Critical failure", "Could not check service because an "
 					"internal error occured");
 		}
+      
+    Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Done. Next cycle in 60 seconds.");
 
 		// Wait 60 seconds until next check.
 		sleep(60);
@@ -380,12 +435,15 @@ void* serviceHandler(void* arg){
 }
 
 void* serviceChecks(void* arg){
+  Log::debug(debug, "serviceChecks(): Started");
 	Log log(LOGFILE, dbData);
 	Database db(dbData);
 	// Run forever.
 	while(1){
+    Log::debug(debug, "serviceChecks(): In loop.");
 		// Try to establish a database connection.
 		if(db.initConnection()){
+      Log::debug(debug, "serviceChecks(): Connected to database.");
       time_t rawtime;
       time(&rawtime);
       int twoMinutesAgo = rawtime-120;
@@ -400,15 +458,36 @@ void* serviceChecks(void* arg){
             << twoMinutesAgo << " LIMIT 100";
 
       unsigned int numOfServices = db.getNumOfResults(query.str());
+      if(debug){
+        stringstream msg;
+        msg << "serviceChecks(): Fetched " << numOfServices << " services that need to get a serviceHandler()";
+        Log::debug(debug, msg.str());
+      }
 			mysql_close(db.getHandle());
 
 			// Start a thread for every service that has no handler yet.
 			for(unsigned int i = 0;i < numOfServices; i++){
+        if(debug){
+          stringstream msg;
+          msg << "serviceChecks(): Starting serviceHandler() " << i;
+          Log::debug(debug, msg.str());
+        }
 				// Start thread.
 				pthread_t thread;
 				if(pthread_create(&thread, 0, serviceHandler, NULL)) {
 					log.putLog(2, "1000", "Could not create service thread");
-				}
+          if(debug){
+            stringstream msg;
+            msg << "serviceChecks(): Starting of serviceHandler() " << i << " failed";
+            Log::debug(debug, msg.str());
+          }
+				}else{
+          if(debug){
+            stringstream msg;
+            msg << "serviceChecks(): Started serviceHandler() " << i;
+            Log::debug(debug, msg.str());
+          }
+        }
 
 				// Wait one second before starting the next thread.
 				sleep(1);
@@ -417,6 +496,7 @@ void* serviceChecks(void* arg){
 			// Could not connect to database.
 			log.putLog(2, "018", "Could not start service check module! (Database error) - "
 										"Retry in 5 minutes.");
+      Log::debug(debug, "serviceChecks(): Could not connect to database.");
 			GeneralNotifications gn(dbData, mailData, xmppData, clickatellData);
 			gn.sendMessages("Critical failure", "Could not start service check module! "
 					"(Database error) Retry in 5 minutes.");
@@ -743,8 +823,6 @@ int main(int argc, char *argv[]){
 		exit(EXIT_FAILURE);
 	}
 
-  bool debug = 0;
-  
   // Find out if we are in debug mode.
   for(int i = 0; i < argc; i++){
 		if(strcmp(argv[i], "--debug") == 0){

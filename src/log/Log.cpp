@@ -27,8 +27,8 @@ Log::Log(const char* myLogfile, mySQLData myDBData)
 
 void Log::putLog(int severity, string errorcode, string logmsg){
 	time_t rawtime;
-  	time(&rawtime);
-  	char* logtime = noNewLine(ctime(&rawtime), strlen(ctime(&rawtime)));
+  time(&rawtime);
+  char* logtime = noNewLine(ctime(&rawtime), strlen(ctime(&rawtime)));
 	ofstream log("/var/log/scopeport-server.log", ios::app);
 	if(!log.fail()){
 		if(logmsg != ".newrun"){
@@ -55,4 +55,15 @@ void Log::putLog(int severity, string errorcode, string logmsg){
 		}
 	}
 	log.close();
+}
+
+void Log::debug(bool debug, string msg){
+  if(!debug){
+    return;
+  }
+
+	time_t rawtime;
+  time(&rawtime);
+  char* logtime = noNewLine(ctime(&rawtime), strlen(ctime(&rawtime)));
+  cout << logtime << " - " << msg << endl;
 }
