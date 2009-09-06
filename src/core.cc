@@ -209,7 +209,7 @@ void* serviceHandler(void* arg){
     time_t rawtime;
     time(&rawtime);
     int twoMinutesAgo = rawtime-120;
-		// Fetch a service to handle.
+	// Fetch a service to handle.
     stringstream query;
     //query << "SELECT id FROM services WHERE (reserved_for = "
     //      << nodeID
@@ -219,17 +219,17 @@ void* serviceHandler(void* arg){
     query << "SELECT id FROM services WHERE handler = 0 OR handler IS NULL OR lastcheck < "
           << twoMinutesAgo;
 		if(mysql_real_query(db.getHandle(), query.str().c_str(), strlen(query.str().c_str())) == 0){
-      Log::debug(debug, "serviceHandler() " + handlerIDString + ": Initial query succeeded.");
+      		Log::debug(debug, "serviceHandler() " + handlerIDString + ": Initial query succeeded.");
 			// Query successful.
 			MYSQL_ROW serviceResult;
 			MYSQL_RES* res = mysql_store_result(db.getHandle());
 			serviceResult = mysql_fetch_row(res);
 			if(mysql_num_rows(res) > 0){
-        // We fetched a service to handle.
-        Log::debug(debug, "serviceHandler() " + handlerIDString + ": A service to handle has been fetched.");
+        		// We fetched a service to handle.
+        		Log::debug(debug, "serviceHandler() " + handlerIDString + ": A service to handle has been fetched.");
 				if(serviceResult[0] == NULL){
 					// We got NULL fields.
-          Log::debug(debug, "serviceHandler() " + handlerIDString + ": ID is NULL. Terminating this thread.");
+          			Log::debug(debug, "serviceHandler() " + handlerIDString + ": ID is NULL. Terminating this thread.");
 					mysql_free_result(res);
 					mysql_close(db.getHandle());
 					return arg;
@@ -244,13 +244,13 @@ void* serviceHandler(void* arg){
           Log::debug(debug, "serviceHandler() " + handlerIDString + ": Could not initially set service settings.");
           log.putLog(2, "xxx", "Could not initially set service settings.");
           service.updateStatus(SERVICE_STATE_INTERR);
-					mysql_free_result(res);
-					mysql_close(db.getHandle());
-					return arg;
+		  mysql_free_result(res);
+		  mysql_close(db.getHandle());
+		  return arg;
         }
         Log::debug(debug, "serviceHandler() " + handlerIDString + ": Service setings have been set initially.");
-			}else{
-        Log::debug(debug, "serviceHandler() " + handlerIDString + ": No service to handle found. Terminating this thread.");
+		}else{
+        		Log::debug(debug, "serviceHandler() " + handlerIDString + ": No service to handle found. Terminating this thread.");
 				// No services have been fetched.
 				mysql_free_result(res);
 				mysql_close(db.getHandle());
@@ -344,24 +344,23 @@ void* serviceHandler(void* arg){
     int firstServiceResult = SERVICE_STATE_INTERR;
     int secondServiceResult = SERVICE_STATE_INTERR;
     for(int run = 0; run <= 1; run++){
-		  serviceResult = service.checkService(run);
-      if(run == 0){
-        firstServiceResult = serviceResult;
-        if(debug){
-          stringstream srss;
-          srss << firstServiceResult;
-          Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Check result I: " + srss.str());
-        }
-      }else{
-        secondServiceResult = serviceResult;
-        if(debug){
-          stringstream srss;
-          srss << secondServiceResult;
-          Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Check result II: " + srss.str());
-        }
-      }
+		serviceResult = service.checkService(run);
+		if(run == 0){
+			firstServiceResult = serviceResult;
+			if(debug){
+	          	stringstream srss;
+	          	srss << firstServiceResult;
+	          	Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Check result I: " + srss.str());
+        	}	
+		}else{
+	        secondServiceResult = serviceResult;
+	        if(debug){
+	          stringstream srss;
+	          srss << secondServiceResult;
+	          Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Check result II: " + srss.str());
+	        }
+		}
     }
-
 
     /*
      * Start the whole procedure again if the first and the second
@@ -369,8 +368,8 @@ void* serviceHandler(void* arg){
      * a mismeasurement.
      */
     Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Calculating percental difference of firstServiceResult and secondServiceResult");
-    if(percentalDifference(firstServiceResult, secondServiceResult) > 80){
-      Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Percental difference is higher than 80 percent. Setting status SERVICE_STATE_INTERR and starting next check in five seconds.");
+    if(firstServiceResult != secondServiceResult || percentalDifference(service.getFirstResponseTime(), service.getSecondResponseTime()) > 25){
+      Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Percental difference is higher than 25 percent. Setting status SERVICE_STATE_INTERR and starting next check in five seconds.");
       service.updateStatus(SERVICE_STATE_INTERR);
       sleep(5);
       continue;

@@ -37,15 +37,15 @@ class Services : public Database {
 		int	m_responseTime2;
 		int	responseTime;
 		int	maximumResponse;
-    unsigned int  timeout;
-    unsigned int  m_status;
+    	unsigned int  timeout;
+    	unsigned int  m_status;
 
-    string 			host;
+    	string 			host;
 		string 			serviceType;
 		string			notiGroup;
 		string			hostname;
 
-    string readWithTimeout(int socket);
+    	string readWithTimeout(int socket);
 
 	public:
 		Services(mySQLData myDBData, unsigned int myHandlerID);
@@ -58,14 +58,16 @@ class Services : public Database {
 		void setServiceType(string serviceType);
 		void setNotiGroup(string notiGroup);
 		void setHostname(string hostname);
-    void setTimeout(unsigned int timeout);
+    	void setTimeout(unsigned int timeout);
 
 		unsigned int getServiceID();
 		unsigned int getHandlerID();
 		int getMaximumResponse();
-    unsigned int getTimeout();
+    	unsigned int getTimeout();
+    	int getFirstResponseTime();
+    	int getSecondResponseTime();
 
-    bool updateSettings();
+    	bool updateSettings();
 
 		int checkService(int run);
 
@@ -77,7 +79,7 @@ class Services : public Database {
 		 */
 		bool checkResponseTime();
 
-    bool buildAverageResponseTime();
+    	bool buildAverageResponseTime();
 
 		//! Sends warning if service has failed
 		void sendWarning();

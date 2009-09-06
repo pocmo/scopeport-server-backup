@@ -28,12 +28,20 @@
 Services::Services(mySQLData myDBData, unsigned int myHandlerID)
 			: Database(myDBData){
 	dbData = myDBData;
-  serviceID = 0;
+ 	serviceID = 0;
 	handlerID = myHandlerID;
 	responseTime = 0;
 	m_responseTime1 = 0;
 	m_responseTime2 = 0;
-  timeout = 0;
+	timeout = 0;
+}
+
+int Services::getFirstResponseTime(){
+	return m_responseTime1;
+}
+
+int Services::getSecondResponseTime(){
+	return m_responseTime2;
 }
 
 void Services::setServiceID(unsigned int x){
@@ -105,16 +113,16 @@ bool Services::updateSettings(){
 			MYSQL_RES* res = mysql_store_result(getHandle());
 			serviceResult = mysql_fetch_row(res);
 			if(mysql_num_rows(res) > 0){
-        // We fetched the service to update. Update!
+        		// We fetched the service to update. Update!
 				setHost(serviceResult[0]);
 				setPort(stringToInteger(serviceResult[1]));
 				setServiceType(serviceResult[2]);
 				setAllowedFails(stringToInteger(serviceResult[3]));
 				setMaximumResponse(stringToInteger(serviceResult[4]));
 				setHostname(serviceResult[5]);
-        setTimeout(stringToInteger(serviceResult[6]));
+        		setTimeout(stringToInteger(serviceResult[6]));
 
-        // Clean up.
+        		// Clean up.
 				mysql_free_result(res);
 				mysql_close(getHandle());
 
