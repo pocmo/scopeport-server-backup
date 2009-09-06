@@ -368,8 +368,8 @@ void* serviceHandler(void* arg){
      * a mismeasurement.
      */
     Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Calculating percental difference of firstServiceResult and secondServiceResult");
-    if(firstServiceResult != secondServiceResult || percentalDifference(service.getFirstResponseTime(), service.getSecondResponseTime()) > 25){
-      Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Percental difference is higher than 25 percent. Setting status SERVICE_STATE_INTERR and starting next check in five seconds.");
+    if(firstServiceResult != secondServiceResult || percentalDifference(service.getFirstResponseTime(), service.getSecondResponseTime()) > 75){
+      Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Percental difference is higher than 75 percent. Setting status SERVICE_STATE_INTERR and starting next check in five seconds.");
       service.updateStatus(SERVICE_STATE_INTERR);
       sleep(5);
       continue;
