@@ -151,12 +151,13 @@ bool Host::receiveAndStoreData(Database db){
 
   hostMessage sensorData = parse(msg);
   
-  string query = generateQuery(sensorData);
+  string query = generateQuery(sensorData, db);
 
   if(query == "err"){
     return 0;
   }
 
+  // Recent sensor data.
   if(getSensorType(sensorData) == SENSOR_TYPE_SENSORDATA){
     if(!db.setQuery(db.getHandle(), generateDeletionQueryForRecentData(sensorData))
         || !db.setQuery(db.getHandle(), generateQueryForRecentData(sensorData))){
@@ -168,7 +169,66 @@ bool Host::receiveAndStoreData(Database db){
 }
 
 int Host::getSensorType(hostMessage sensorData){
+  if(sensorData.type.length() >= 7){
+    if(sensorData.type.substr(0, 7) == "profile"){
+      return SENSOR_TYPE_PROFILEDATA;
+    }
+  }
   return SENSOR_TYPE_SENSORDATA;
+}
+
+vector<string> Host::buildNetworkInterfacesQuery(string data, unsigned int hostID){
+	vector<string> returnage;
+	
+	istringstream iss(data);
+	string nic;
+	
+	while(getline(iss, nic, ';')){
+		stringstream query;
+		istringstream parts(nic);
+		string part;
+		
+		query << "INSERT INTO networkinterfaces(host_id, name, received, sent, created_at) VALUES(" << hostID;
+		
+		while(getline(parts, part, '|')){
+			query << ",'" << Database::escapeString(part) << "'";
+		}
+		query << ", NOW())";
+
+		returnage.push_back(query.str());
+	}
+	return returnage;
+}
+
+vector<string> Host::buildCpusQuery(string data, unsigned int hostID){
+	vector<string> returnage;
+
+	istringstream iss(data);
+	string cpu;
+	
+	while(getline(iss, cpu, ';')){
+		stringstream query;
+		istringstream bigparts(cpu);
+		string bigpart;
+		
+		query << "INSERT INTO cpus(host_id, core_number, vendor, model, created_at) VALUES(" << hostID;
+		
+		while(getline(bigparts, bigpart, '|')){
+			istringstream parts(bigpart);
+			string part;
+			unsigned int i = 0;
+			while(getline(parts, part, ':')){
+				if(i == 1){
+					query << ",'" << Database::escapeString(part) << "'";
+				}
+				i++;
+			}
+		}
+		query << ", NOW())";
+
+		returnage.push_back(query.str());
+	}
+	return returnage;
 }
 
 string Host::generateQueryForRecentData(hostMessage sensorData){
@@ -191,11 +251,11 @@ string Host::generateDeletionQueryForRecentData(hostMessage sensorData){
   return query.str();
 }
 
-string Host::generateQuery(hostMessage sensorData){
+string Host::generateQuery(hostMessage sensorData, Database db){
   string table;
   stringstream values;
 
-  int type = SENSOR_TYPE_SENSORDATA;
+  int type = getSensorType(sensorData);
 
   if(type == SENSOR_TYPE_SENSORDATA){
     table = "sensorvalues(host_id, name, value, created_at)";
@@ -206,11 +266,31 @@ string Host::generateQuery(hostMessage sensorData){
            << Database::escapeString(sensorData.value)
            << "', NOW()";
   }else if(type == SENSOR_TYPE_PROFILEDATA){
-    
+    if(sensorData.type == "profile_hostname"){ stringstream query; query << "UPDATE hosts SET hostname = '" << Database::escapeString(sensorData.value) << "' WHERE id = " << sensorData.hostID; return query.str(); }
+    if(sensorData.type == "profile_domainname"){ stringstream query; query << "UPDATE hosts SET domainname = '" << Database::escapeString(sensorData.value) << "' WHERE id = " << sensorData.hostID; return query.str(); }
+    if(sensorData.type == "profile_kernel"){ stringstream query; query << "UPDATE hosts SET linux_kernelversion = '" << Database::escapeString(sensorData.value) << "' WHERE id = " << sensorData.hostID; return query.str(); }
+    if(sensorData.type == "profile_total_memory"){ stringstream query; query << "UPDATE hosts SET total_memory = '" << Database::escapeString(sensorData.value) << "' WHERE id = " << sensorData.hostID; return query.str(); }
+    if(sensorData.type == "profile_total_swap"){ stringstream query; query << "UPDATE hosts SET total_swap = '" << Database::escapeString(sensorData.value) << "' WHERE id = " << sensorData.hostID; return query.str(); }
+    if(sensorData.type == "profile_sp_client_version"){ stringstream query; query << "UPDATE hosts SET clientversion = '" << Database::escapeString(sensorData.value) << "' WHERE id = " << sensorData.hostID; return query.str(); }
+    if(sensorData.type == "profile_network_interfaces"){
+    	stringstream delquery; delquery << "DELETE FROM networkinterfaces WHERE host_id = " << sensorData.hostID;
+    	db.setQuery(db.getHandle(), delquery.str());
+    	vector<string> queries = buildNetworkInterfacesQuery(sensorData.value, sensorData.hostID);
+    	for(vector<string>::const_iterator iter = queries.begin(); iter != queries.end(); ++iter){
+    		db.setQuery(db.getHandle(), *iter);
+    	}
+    }
+ 	if(sensorData.type == "profile_cpus"){
+    	stringstream delquery; delquery << "DELETE FROM cpus WHERE host_id = " << sensorData.hostID;
+    	db.setQuery(db.getHandle(), delquery.str());
+    	vector<string> queries = buildCpusQuery(sensorData.value, sensorData.hostID);
+    	for(vector<string>::const_iterator iter = queries.begin(); iter != queries.end(); ++iter){
+    		db.setQuery(db.getHandle(), *iter);
+    	}
+    }
   }else{
     return "err";
   }
 
   return "INSERT INTO " + table + " VALUES( " + values.str() + ")";
 }
-

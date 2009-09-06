@@ -50,7 +50,7 @@ bool Database::initConnection(){
 }
 
 bool Database::setQuery(MYSQL* init, string query){
-	if(query.empty())
+	if(query.empty() || init == NULL)
 		return "NULL";
 
 	if(mysql_real_query(init, query.c_str(), strlen(query.c_str())) == 0){

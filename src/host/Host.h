@@ -25,7 +25,7 @@
 
 class Host {
 	private:
-		mySQLData dbData;
+	mySQLData dbData;
     int socket;
 
     struct sockaddr_in socketAddress;
@@ -33,13 +33,16 @@ class Host {
     bool send(string message);
     string receive();
     hostMessage parse(string message);
-    string generateQuery(hostMessage sensorData);
+    string generateQuery(hostMessage sensorData, Database db);
     int getSensorType(hostMessage sensorData);
     string generateQueryForRecentData(hostMessage sensorData);
     string generateDeletionQueryForRecentData(hostMessage sensorData);
 
+	vector<string> buildNetworkInterfacesQuery(string data, unsigned int hostID);
+	vector<string> buildCpusQuery(string data, unsigned int hostID);
+
   public:
-		Host(mySQLData myDBData, int mySocket, struct sockaddr_in mySocketAddress);
+	Host(mySQLData myDBData, int mySocket, struct sockaddr_in mySocketAddress);
 
     string getIPv4Address();
     void refuse(string reason);
