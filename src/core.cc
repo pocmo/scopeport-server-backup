@@ -209,7 +209,7 @@ void* serviceHandler(void* arg){
     time_t rawtime;
     time(&rawtime);
     int twoMinutesAgo = rawtime-120;
-	// Fetch a service to handle.
+    // Fetch a service to handle.
     stringstream query;
     //query << "SELECT id FROM services WHERE (reserved_for = "
     //      << nodeID
@@ -244,13 +244,13 @@ void* serviceHandler(void* arg){
           Log::debug(debug, "serviceHandler() " + handlerIDString + ": Could not initially set service settings.");
           log.putLog(2, "xxx", "Could not initially set service settings.");
           service.updateStatus(SERVICE_STATE_INTERR);
-		  mysql_free_result(res);
-		  mysql_close(db.getHandle());
-		  return arg;
+				  mysql_free_result(res);
+				  mysql_close(db.getHandle());
+				  return arg;
         }
         Log::debug(debug, "serviceHandler() " + handlerIDString + ": Service setings have been set initially.");
 		}else{
-        		Log::debug(debug, "serviceHandler() " + handlerIDString + ": No service to handle found. Terminating this thread.");
+        Log::debug(debug, "serviceHandler() " + handlerIDString + ": No service to handle found. Terminating this thread.");
 				// No services have been fetched.
 				mysql_free_result(res);
 				mysql_close(db.getHandle());
@@ -317,10 +317,9 @@ void* serviceHandler(void* arg){
 			}
 			mysql_close(db.getHandle());
 		}else{
-      Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Could not connect to database. Retry in 30 seconds.");
-      log.putLog(2, "xxx", "Could not check if service still needs to be checked (Database error). Retry in 30 seconds.");
-      sleep(30);
-      continue;
+      Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Could not connect to database. Closing this handler.");
+      log.putLog(2, "xxx", "Could not check if service still needs to be checked (Database error). Closing this handler.");
+      return arg;
 		}
 
     Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: We still want to check this service.");
@@ -329,11 +328,9 @@ void* serviceHandler(void* arg){
     // Update settings.
     if(!service.updateSettings()){
       // Could not store the response time.
-      Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Could not update service settings. Retry in 30 seconds..");
-      log.putLog(2, "xxx", "Could not update service settings. Retry in 30 seconds.");
-      service.updateStatus(SERVICE_STATE_INTERR);
-      sleep(30);
-      continue;
+      Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Could not update service settings. Closing this handler.");
+      log.putLog(2, "xxx", "Could not update service settings. Closing this handler.");
+      return arg;
     }
 
     Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Service settings updated.");
@@ -344,35 +341,22 @@ void* serviceHandler(void* arg){
     int firstServiceResult = SERVICE_STATE_INTERR;
     int secondServiceResult = SERVICE_STATE_INTERR;
     for(int run = 0; run <= 1; run++){
-		serviceResult = service.checkService(run);
-		if(run == 0){
-			firstServiceResult = serviceResult;
-			if(debug){
-	          	stringstream srss;
-	          	srss << firstServiceResult;
-	          	Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Check result I: " + srss.str());
-        	}	
-		}else{
-	        secondServiceResult = serviceResult;
-	        if(debug){
-	          stringstream srss;
+			serviceResult = service.checkService(run);
+			if(run == 0){
+				firstServiceResult = serviceResult;
+				if(debug){
+	        stringstream srss;
+	        srss << firstServiceResult;
+	        Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Check result I: " + srss.str());
+	      }	
+			}else{
+	      secondServiceResult = serviceResult;
+	      if(debug){
+	        stringstream srss;
 	          srss << secondServiceResult;
 	          Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Check result II: " + srss.str());
-	        }
-		}
-    }
-
-    /*
-     * Start the whole procedure again if the first and the second
-     * serviceResult are too far away from each other because this is most probably
-     * a mismeasurement.
-     */
-    Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Calculating percental difference of firstServiceResult and secondServiceResult");
-    if(firstServiceResult != secondServiceResult || percentalDifference(service.getFirstResponseTime(), service.getSecondResponseTime()) > 75){
-      Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Percental difference is higher than 75 percent. Setting status SERVICE_STATE_INTERR and starting next check in five seconds.");
-      service.updateStatus(SERVICE_STATE_INTERR);
-      sleep(5);
-      continue;
+	      }
+			}
     }
 
     Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Checking if the measured response time is higher than the defined maximum.");
@@ -395,11 +379,9 @@ void* serviceHandler(void* arg){
     // Store the response time in the database.
     if(!service.storeResponseTime()){
       // Could not store the response time.
-      Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Could not store response time. Retry in 30 seconds.");
-      log.putLog(2, "008", "Could not update service response time. Retry in 30 seconds.");
-      service.updateStatus(SERVICE_STATE_INTERR);
-      sleep(30);
-      continue;
+      Log::debug(debug, "serviceHandler() " + handlerIDString + " [loop]: Could not store response time. Closing this handler.");
+      log.putLog(2, "008", "Could not update service response time. Closing this handler.");
+      return arg;
     }
 
 		if(serviceResult == SERVICE_STATE_CONFAIL || serviceResult == SERVICE_STATE_OKAYTIME
@@ -446,14 +428,14 @@ void* serviceChecks(void* arg){
       time_t rawtime;
       time(&rawtime);
       int twoMinutesAgo = rawtime-120;
-			// Get the number of services that have no handler yet.
+      // Get the number of services that have no handler yet.
       stringstream query;
       //query << "SELECT id FROM services WHERE (reserved_for = "
       //      << nodeID
       //      << " AND TIMEDIFF(reserved_on, NOW()) < '00:01:30') "
       //         "OR handler = 0 OR lastcheck < "
       //      << twoMinutesAgo;
-			query << "SELECT id FROM services WHERE handler = 0 OR handler = NULL OR lastcheck < "
+      query << "SELECT id FROM services WHERE handler = 0 OR handler = NULL OR lastcheck < "
             << twoMinutesAgo << " LIMIT 100";
 
       unsigned int numOfServices = db.getNumOfResults(query.str());
