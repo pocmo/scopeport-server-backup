@@ -145,6 +145,7 @@ bool Host::receiveAndStoreData(Database db){
 
   // Check if the messsage was received successfully.
   if(msg == "err"){
+    lastError = "Could not receive message from client.";
     return 0;
   }
 
@@ -153,18 +154,30 @@ bool Host::receiveAndStoreData(Database db){
   string query = generateQuery(sensorData, db);
 
   if(query == "err"){
+    lastError = "Could not generate query.";
     return 0;
+  }
+
+  if(query == "done"){
+    // The data has been inserted by generateQuery()! (i know..)
+    return 1;
   }
 
   // Recent sensor data.
   if(getSensorType(sensorData) == SENSOR_TYPE_SENSORDATA){
     if(!db.setQuery(db.getHandle(), generateDeletionQueryForRecentData(sensorData))
         || !db.setQuery(db.getHandle(), generateQueryForRecentData(sensorData))){
+      lastError = "Could not store data in recent value table. Database error: " + db.getError();
       return 0;
     }
   }
 
-  return db.setQuery(db.getHandle(), query);
+  if(!db.setQuery(db.getHandle(), query)){
+    lastError = "Could not store data. Database error: " + db.getError();
+    return 0;
+  }else{
+    return 1;
+  }
 }
 
 int Host::getSensorType(hostMessage sensorData){
@@ -278,6 +291,8 @@ string Host::generateQuery(hostMessage sensorData, Database db){
     	for(vector<string>::const_iterator iter = queries.begin(); iter != queries.end(); ++iter){
     		db.setQuery(db.getHandle(), *iter);
     	}
+      // Let the calling method know that we already inserted the values for this packet.
+      return "done";
     }
  	if(sensorData.type == "profile_cpus"){
     	stringstream delquery; delquery << "DELETE FROM cpus WHERE host_id = " << sensorData.hostID;
@@ -286,10 +301,20 @@ string Host::generateQuery(hostMessage sensorData, Database db){
     	for(vector<string>::const_iterator iter = queries.begin(); iter != queries.end(); ++iter){
     		db.setQuery(db.getHandle(), *iter);
     	}
+      // Let the calling method know that we already inserted the values for this packet.
+      return "done";
     }
   }else{
     return "err";
   }
 
   return "INSERT INTO " + table + " VALUES( " + values.str() + ")";
+}
+
+string Host::getLastError(){
+  if(lastError.empty()){
+    return "No error message given.";
+  }else{
+    return lastError;
+  }
 }

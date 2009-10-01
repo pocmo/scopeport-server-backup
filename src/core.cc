@@ -749,7 +749,7 @@ void handleClient(){
       if(!host.receiveAndStoreData(clientDB)){
         stringstream logmsg;
         logmsg << "Could not receive and store data from host "
-               << host.getIPv4Address();
+               << host.getIPv4Address() << " (" << host.getLastError() << ")";
         log.putLog(3, "xxx", logmsg.str());
         host.refuse("Could not accept and store your data.");
         mysql_close(clientDB.getHandle());

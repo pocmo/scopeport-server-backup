@@ -24,12 +24,12 @@
 #include "../database/Database.h"
 
 class Host {
-	private:
-	mySQLData dbData;
+  private:
+    mySQLData dbData;
     int socket;
-
+  
     struct sockaddr_in socketAddress;
-	
+  	
     bool send(string message);
     string receive();
     hostMessage parse(string message);
@@ -37,23 +37,27 @@ class Host {
     int getSensorType(hostMessage sensorData);
     string generateQueryForRecentData(hostMessage sensorData);
     string generateDeletionQueryForRecentData(hostMessage sensorData);
-
-	vector<string> buildNetworkInterfacesQuery(string data, unsigned int hostID);
-	vector<string> buildCpusQuery(string data, unsigned int hostID);
+  
+    vector<string> buildNetworkInterfacesQuery(string data, unsigned int hostID);
+    vector<string> buildCpusQuery(string data, unsigned int hostID);
+    
+    string lastError;
 
   public:
-	Host(mySQLData myDBData, int mySocket, struct sockaddr_in mySocketAddress);
-
+    Host(mySQLData myDBData, int mySocket, struct sockaddr_in mySocketAddress);
+  
     string getIPv4Address();
     void refuse(string reason);
     void notify(string reason);
-
+  
     bool isBlacklisted(Database db);
     bool addToBlacklist(Database db);
-
+  
     bool checkLogin(Database db);
-
+  
     bool receiveAndStoreData(Database db);
+    
+    string getLastError();
 };
 
 #endif /*HOST_H_*/
