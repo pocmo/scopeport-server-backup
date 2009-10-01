@@ -101,7 +101,6 @@ hostMessage Host::parse(string message){
 }
 
 bool Host::isBlacklisted(Database db){
-return 0;
   string query = "SELECT 1 FROM blacklisted_hosts WHERE host = '" + getIPv4Address() + "'";
   if(db.getNumOfResults(query) > 0){
     return 1;

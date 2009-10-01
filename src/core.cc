@@ -732,7 +732,7 @@ void handleClient(){
           errorcode = "xxx";
           logmsg << "Host "
                  << host.getIPv4Address()
-                 << " sent wrong login credentials. Blocked. Blacklisting failed..";
+                 << " sent wrong login credentials. Blocked. Blacklisting failed.";
         }
         log.putLog(3, errorcode, logmsg.str());
         host.refuse("Login incorrect");
