@@ -827,11 +827,6 @@ void handleClient()
       // Skip if this host is blacklisted.
       if(host.isBlacklisted(clientDB))
       {
-        stringstream logmsg;
-        logmsg << "Blacklisted host "
-          << host.getIPv4Address()
-          << " tried to connect. Blocked.";
-        log.putLog(1, "xxx", logmsg.str());
         host.refuse("Blacklisted");
         mysql_close(clientDB.getHandle());
         close(clientSocket);
