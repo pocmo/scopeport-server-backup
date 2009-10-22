@@ -20,7 +20,8 @@
 #include "../database/Database.h"
 
 ConversationDebug::ConversationDebug(mySQLData myDBData, string myMethod, string myRemoteHost)
-			: Database(myDBData) {
+: Database(myDBData)
+{
   method = myMethod;
   remoteHost = myRemoteHost;
 
@@ -28,21 +29,29 @@ ConversationDebug::ConversationDebug(mySQLData myDBData, string myMethod, string
   create();
 }
 
-bool ConversationDebug::checkIfDisabledForThisMethod(){
+
+bool ConversationDebug::checkIfDisabledForThisMethod()
+{
   stringstream query;
   query << "SELECT ";
 
-  if(method == "smtp"){
+  if(method == "smtp")
+  {
     query << "conversation_logging_smtp";
-  }else if(method == "xmpp"){
+  }
+  else if(method == "xmpp")
+  {
     query << "conversation_logging_xmpp";
-  }else{
+  }
+  else
+  {
     return 1;
   }
 
   query << " FROM settings ORDER BY id DESC LIMIT 1";
 
-  if(initConnection()){
+  if(initConnection())
+  {
     string result = sGetQuery(query.str());
     mysql_close(getHandle());
     if(result == "1") { return 0; }
@@ -51,8 +60,10 @@ bool ConversationDebug::checkIfDisabledForThisMethod(){
   return 1;
 }
 
-void ConversationDebug::create(){
-  if(disabled) { return; }  
+
+void ConversationDebug::create()
+{
+  if(disabled) { return; }
 
   static timeval tv;
   static timeval tv2;
@@ -63,34 +74,36 @@ void ConversationDebug::create(){
   stringstream query;
 
   query << "INSERT INTO conversations(conversation_id, method, remote_host, created_at) VALUES("
-        << conversationID
-        << ", '"
-        << Database::escapeString(method)
-        <<  "', '"
-        << Database::escapeString(remoteHost)
-        << "', NOW())";
+    << conversationID
+    << ", '"
+    << Database::escapeString(method)
+    <<  "', '"
+    << Database::escapeString(remoteHost)
+    << "', NOW())";
 
-  if(initConnection()){
+  if(initConnection())
+  {
     setQuery(getHandle(), query.str());
     mysql_close(getHandle());
   }
 }
 
 
-void ConversationDebug::log(unsigned int direction, string message){
-  if(disabled) { return; }  
+void ConversationDebug::log(unsigned int direction, string message)
+{
+  if(disabled) { return; }
 
   stringstream query;
   query << "INSERT INTO conversationmessages(conversation_id, direction, message, created_at) VALUES("
-        << conversationID
-        << ", "
-        << direction
-        <<  ", '"
-        << Database::escapeString(message)
-        << "', NOW())";
-  if(initConnection()){
+    << conversationID
+    << ", "
+    << direction
+    <<  ", '"
+    << Database::escapeString(message)
+    << "', NOW())";
+  if(initConnection())
+  {
     setQuery(getHandle(), query.str());
     mysql_close(getHandle());
   }
 }
-

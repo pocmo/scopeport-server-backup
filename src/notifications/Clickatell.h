@@ -20,10 +20,10 @@
 
 #include "../internal.h"
 
-class Clickatell {
-	public:
-		//! Returns mobilecData struct with settings from database.
-		static mobilecData fetchSettings(mySQLData dbData);
+class Clickatell
+{
+  public:
+    //! Returns mobilecData struct with settings from database.
+    static mobilecData fetchSettings(mySQLData dbData);
 };
-
-#endif /* CLICKATELL_H_ */
+#endif                                            /* CLICKATELL_H_ */

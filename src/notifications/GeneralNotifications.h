@@ -27,51 +27,51 @@
 #include "../internal.h"
 #include "../database/Database.h"
 
-class GeneralNotifications : public Database {
-	private:
-		//! Holds database login information.
-		mySQLData	dbData;
-		
-		//! Holds SMTP login information and settings.
-		mailingData		mailData;
-		
-		//! Holds XMPP login information and settings.
-		XMPPData		xmppData;
+class GeneralNotifications : public Database
+{
+  private:
+    //! Holds database login information.
+    mySQLData dbData;
 
-		//! Holds information of Clickatell SMS Gateway API.
-		mobilecData		clickatellData;
-		
-		//! The ID of the general notification group defined in the web interface.
-		string		gnGroup;
-		
-		//! The fallback mail receiver. Defined in the config file and used if no database connection can be established.
-		/*!
-		 * \sa fallbackXMPPReciver
-		 */
-		string		fallbackMailReceiver;
-		
-		//! The fallback XMPP receiver. Defined in the config file and used if no database connection can be established.
-		/*!
-		 * \sa fallbackMailReciver
-		 */
-		string		fallbackXMPPReceiver;
-		
-		//! Fetches the general notification group from the database.  
-		/*!
-		 * \sa gnGroup
-		 * \return True if the gnGroup variable was filled, false in case of error.
-		 */
-		bool getGNGroup();
-	public:
-		GeneralNotifications(mySQLData myDBData, mailingData myMailData, XMPPData myXMPPData,
-				mobilecData myClickatellData);
-		//! Sends defined text and subject to all notification receivers.  
-		/*! 
-		 * \param subject The subject of the message.
-		 * \param message The message itself.
-		 * \return True if message was deliverd, false if an error occured.
-		 */
-		bool sendMessages(string subject, string message);
+    //! Holds SMTP login information and settings.
+    mailingData   mailData;
+
+    //! Holds XMPP login information and settings.
+    XMPPData    xmppData;
+
+    //! Holds information of Clickatell SMS Gateway API.
+    mobilecData   clickatellData;
+
+    //! The ID of the general notification group defined in the web interface.
+    string    gnGroup;
+
+    //! The fallback mail receiver. Defined in the config file and used if no database connection can be established.
+    /*!
+     * \sa fallbackXMPPReciver
+     */
+    string    fallbackMailReceiver;
+
+    //! The fallback XMPP receiver. Defined in the config file and used if no database connection can be established.
+    /*!
+     * \sa fallbackMailReciver
+     */
+    string    fallbackXMPPReceiver;
+
+    //! Fetches the general notification group from the database.
+    /*!
+     * \sa gnGroup
+     * \return True if the gnGroup variable was filled, false in case of error.
+     */
+    bool getGNGroup();
+  public:
+    GeneralNotifications(mySQLData myDBData, mailingData myMailData, XMPPData myXMPPData,
+      mobilecData myClickatellData);
+    //! Sends defined text and subject to all notification receivers.
+    /*!
+     * \param subject The subject of the message.
+     * \param message The message itself.
+     * \return True if message was deliverd, false if an error occured.
+     */
+    bool sendMessages(string subject, string message);
 };
-
-#endif /*GENERALNOTIFICATIONS_H_*/
+#endif                                            /*GENERALNOTIFICATIONS_H_*/

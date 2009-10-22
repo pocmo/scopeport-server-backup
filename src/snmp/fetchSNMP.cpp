@@ -17,10 +17,13 @@
 
 #include "fetchSNMP.h"
 
-fetchSNMP::fetchSNMP(int mySocket){
-	socket = mySocket;
+fetchSNMP::fetchSNMP(int mySocket)
+{
+  socket = mySocket;
 }
 
-bool fetchSNMP::openSocket(){
-	return 0;
+
+bool fetchSNMP::openSocket()
+{
+  return 0;
 }

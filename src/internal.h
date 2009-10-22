@@ -54,87 +54,93 @@ using namespace std;
 // Configuration structs.
 
 //! Struct: Holds login and connection information of MySQL database.
-struct mySQLData {
-	//! The host the MySQL server is running on. (Hostname or IP)
-	const char*		host;
-	//! The user we want to connect with.
-	const char*		user;
-	//! The password of the chosen user.
-	const char*		pass;
-	//! The ScopePort database.
-	const char*		db;
-	//! The port of the MySQL server we want to connect to. (0 = Standard port)
-	unsigned int	port;
+struct mySQLData
+{
+  //! The host the MySQL server is running on. (Hostname or IP)
+  const char*   host;
+  //! The user we want to connect with.
+  const char*   user;
+  //! The password of the chosen user.
+  const char*   pass;
+  //! The ScopePort database.
+  const char*   db;
+  //! The port of the MySQL server we want to connect to. (0 = Standard port)
+  unsigned int  port;
 
 };
 
 //! Struct: Holds login, server and general SMTP information.
-struct mailingData {
-	//! Is mailing enabled?
-	bool			doMailing;
-	//! Do we need to authenticate on the SMTP server?
-	bool			mailUseAuth;
-	//! The SMTP server we want to connect to. (Hostname or IP)
-	string			mailServer;
-	//! The port we want to use.
-	unsigned int	mailPort;
-	//! The user we want to connect with.
-	string			mailUser;
-	//! The password of the user.
-	string			mailPass;
-	//! Our hostname. Specified in EHLO sequence.
-	string			mailHostname;
-	//! The "mail-from" field of sent messages.
-	string			mailFrom;
-	//! A receiver that is used if an error occures while fetching other addresses.
-	string			fallbackReceiver;
+struct mailingData
+{
+  //! Is mailing enabled?
+  bool      doMailing;
+  //! Do we need to authenticate on the SMTP server?
+  bool      mailUseAuth;
+  //! The SMTP server we want to connect to. (Hostname or IP)
+  string      mailServer;
+  //! The port we want to use.
+  unsigned int  mailPort;
+  //! The user we want to connect with.
+  string      mailUser;
+  //! The password of the user.
+  string      mailPass;
+  //! Our hostname. Specified in EHLO sequence.
+  string      mailHostname;
+  //! The "mail-from" field of sent messages.
+  string      mailFrom;
+  //! A receiver that is used if an error occures while fetching other addresses.
+  string      fallbackReceiver;
 };
 
 //! Struct: Holds information of login, server and general XMPP information
-struct XMPPData {
-	//! Is XMPP enabled?
-	bool			doXMPP;
-	//! The XMPP server we want to connect to.
-	string			xmppServer;
-	//! The port of the XMPP server.
-	unsigned int	xmppPort;
-	//! The user we want to connect with.
-	string			xmppUser;
-	//! The password of the user.
-	string			xmppPass;
-	//! A XMPP ressource (part of the JID like /home or /notebook).
-	string			xmppResource;
-	//! A receiver that is used if an error occures while fetching other addresses.
-	string			fallbackReceiver;
+struct XMPPData
+{
+  //! Is XMPP enabled?
+  bool      doXMPP;
+  //! The XMPP server we want to connect to.
+  string      xmppServer;
+  //! The port of the XMPP server.
+  unsigned int  xmppPort;
+  //! The user we want to connect with.
+  string      xmppUser;
+  //! The password of the user.
+  string      xmppPass;
+  //! A XMPP ressource (part of the JID like /home or /notebook).
+  string      xmppResource;
+  //! A receiver that is used if an error occures while fetching other addresses.
+  string      fallbackReceiver;
 };
 
 //! Struct: Holds information of Clickatell SMS Gateway API.
-struct mobilecData {
-	//! Is usage of the API enabled?
-	bool	doMobileC;
-	//! The API username.
-	string	username;
-	//! The API password.
-	string	password;
-	//! The API ID.
-	string	apiID;
-	//! A receiver that is used if an error occures while fetching other addresses.
-	string	fallbackNumber;
+struct mobilecData
+{
+  //! Is usage of the API enabled?
+  bool  doMobileC;
+  //! The API username.
+  string  username;
+  //! The API password.
+  string  password;
+  //! The API ID.
+  string  apiID;
+  //! A receiver that is used if an error occures while fetching other addresses.
+  string  fallbackNumber;
 };
 
 //! Struct: Holds information of emergeny notification receiver.
-struct enData {
-	//! The type of the receiver. (e.g. JID or email address)
-	string	type;
-	//! The address. (e.g. JID or email)
-	string	address;
-	//! The emergeny ID this notification belogs to.
-	int		emergencyID;
-	//! The notificationList ID of this receiver.
-	int		ID;
+struct enData
+{
+  //! The type of the receiver. (e.g. JID or email address)
+  string  type;
+  //! The address. (e.g. JID or email)
+  string  address;
+  //! The emergeny ID this notification belogs to.
+  int   emergencyID;
+  //! The notificationList ID of this receiver.
+  int   ID;
 };
 
-struct hostMessage {
+struct hostMessage
+{
   unsigned int hostID;
   string type;
   string value;
@@ -181,5 +187,4 @@ bool numOnly(string checkMe);
 #define CONV_DEBUG_DIRECTION_RECV 1
 #define CONV_DEBUG_ERROR_SENT "Sending the message failed"
 #define CONV_DEBUG_ERROR_RECV "Nothing was received"
-
-#endif /*INTERNAL_H_*/
+#endif                                            /*INTERNAL_H_*/

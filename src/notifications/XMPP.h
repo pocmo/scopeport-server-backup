@@ -27,46 +27,46 @@
 #include "../internal.h"
 #include "../log/ConversationDebug.h"
 
-class XMPP{
-	private:
-		//! Holds information of login, server and general XMPP information
-		XMPPData xmppData;
+class XMPP
+{
+  private:
+    //! Holds information of login, server and general XMPP information
+    XMPPData xmppData;
 
-		//! Holds login and connection information of MySQL database.
-		mySQLData dbData;
+    //! Holds login and connection information of MySQL database.
+    mySQLData dbData;
 
     ConversationDebug* p_debug;
-    
+
     bool sendSocket(string msg);
     bool readSocket();
 
-	public:
-		XMPP(XMPPData xmppData, mySQLData myDBData);
+  public:
+    XMPP(XMPPData xmppData, mySQLData myDBData);
 
-		//! Updates xmppData
-		/*!
-		 * \sa xmppData
-		 */
-		void updateSettings(XMPPData xmppData);
+    //! Updates xmppData
+    /*!
+     * \sa xmppData
+     */
+    void updateSettings(XMPPData xmppData);
 
-		//! Extracts the error message out of an XML/XMPP error reply.
-		/*!
-		 * \param message The error reply to extract the error message from
-		 * \param errortype Type of error (e.g. stream error)
-		 * \return The extracted error message
-		 */
-		string getErrorReplyMessage(string message, int errortype);
+    //! Extracts the error message out of an XML/XMPP error reply.
+    /*!
+     * \param message The error reply to extract the error message from
+     * \param errortype Type of error (e.g. stream error)
+     * \return The extracted error message
+     */
+    string getErrorReplyMessage(string message, int errortype);
 
-		//! Sends XMPP message
-		/*!
-		 * \param message The text to send
-		 * \param receiver JID of receiver
-		 * \return True on success, false in case of error.
-		 */
-		bool sendMessage(string message, string receiver);
+    //! Sends XMPP message
+    /*!
+     * \param message The text to send
+     * \param receiver JID of receiver
+     * \return True on success, false in case of error.
+     */
+    bool sendMessage(string message, string receiver);
 
-		//! Returns XMPPData struct with settings from database.
-		static XMPPData fetchSettings(mySQLData dbData);
+    //! Returns XMPPData struct with settings from database.
+    static XMPPData fetchSettings(mySQLData dbData);
 };
-
-#endif /*XMPP_H_*/
+#endif                                            /*XMPP_H_*/

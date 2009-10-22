@@ -21,7 +21,8 @@
 #include "../internal.h"
 #include "../database/Database.h"
 
-class Cloud{
+class Cloud
+{
   private:
     int nodeID;
     mySQLData dbData;
@@ -54,5 +55,4 @@ class Cloud{
     static int checkNodeID(unsigned int nodeID, Database db);
     static bool setTakeoff(unsigned int nodeID, Database db);
 };
-
-#endif /*CLOUD_H_*/
+#endif                                            /*CLOUD_H_*/

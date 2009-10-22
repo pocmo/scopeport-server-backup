@@ -23,115 +23,115 @@
 #include "../internal.h"
 #include "../database/Database.h"
 
-class Services : public Database {
-	protected:
-		//! Holds login and connection information of MySQL database.
-		mySQLData dbData;
+class Services : public Database
+{
+  protected:
+    //! Holds login and connection information of MySQL database.
+    mySQLData dbData;
 
-	private:
-		unsigned int	handlerID;
-		unsigned int	serviceID;
-		unsigned int	port;
-		unsigned int	allowedFails;
-		int	m_responseTime1;
-		int	m_responseTime2;
-		int	responseTime;
-		int	maximumResponse;
-    	unsigned int  timeout;
-    	unsigned int  m_status;
+  private:
+    unsigned int  handlerID;
+    unsigned int  serviceID;
+    unsigned int  port;
+    unsigned int  allowedFails;
+    int m_responseTime1;
+    int m_responseTime2;
+    int responseTime;
+    int maximumResponse;
+    unsigned int  timeout;
+    unsigned int  m_status;
 
-    	string 			host;
-		string 			serviceType;
-		string			notiGroup;
-		string			hostname;
+    string      host;
+    string      serviceType;
+    string      notiGroup;
+    string      hostname;
 
-    	string readWithTimeout(int socket);
+    string readWithTimeout(int socket);
 
-	public:
-		Services(mySQLData myDBData, unsigned int myHandlerID);
+  public:
+    Services(mySQLData myDBData, unsigned int myHandlerID);
 
-		void setServiceID(unsigned int serviceID);
-		void setAllowedFails(unsigned int allowedFails);
-		void setPort(unsigned int port);
-		void setMaximumResponse(unsigned int maxres);
-		void setHost(string host);
-		void setServiceType(string serviceType);
-		void setNotiGroup(string notiGroup);
-		void setHostname(string hostname);
-    	void setTimeout(unsigned int timeout);
+    void setServiceID(unsigned int serviceID);
+    void setAllowedFails(unsigned int allowedFails);
+    void setPort(unsigned int port);
+    void setMaximumResponse(unsigned int maxres);
+    void setHost(string host);
+    void setServiceType(string serviceType);
+    void setNotiGroup(string notiGroup);
+    void setHostname(string hostname);
+    void setTimeout(unsigned int timeout);
 
-		unsigned int getServiceID();
-		unsigned int getHandlerID();
-		int getMaximumResponse();
-    	unsigned int getTimeout();
-    	int getFirstResponseTime();
-    	int getSecondResponseTime();
+    unsigned int getServiceID();
+    unsigned int getHandlerID();
+    int getMaximumResponse();
+    unsigned int getTimeout();
+    int getFirstResponseTime();
+    int getSecondResponseTime();
 
-    	bool updateSettings();
+    bool updateSettings();
 
-		int checkService(int run);
+    int checkService(int run);
 
-		void updateStatus(int status);
+    void updateStatus(int status);
 
-		//! Checks if the response time of a service is in range.
-		/*!
-		 * \returns True if the response time is in range, false if not.
-		 */
-		bool checkResponseTime();
+    //! Checks if the response time of a service is in range.
+    /*!
+     * \returns True if the response time is in range, false if not.
+     */
+    bool checkResponseTime();
 
-    	bool buildAverageResponseTime();
+    bool buildAverageResponseTime();
 
-		//! Sends warning if service has failed
-		void sendWarning();
+    //! Sends warning if service has failed
+    void sendWarning();
 
-		//! Stores response time in database.
-		/*!
-		 * \param checkid The ID of the soft- or rudecheck
-		 * \param ms The response time to store
-		 */
-		bool storeResponseTime();
+    //! Stores response time in database.
+    /*!
+     * \param checkid The ID of the soft- or rudecheck
+     * \param ms The response time to store
+     */
+    bool storeResponseTime();
 
-		//! Check if there is an SMTP server behind given socket connection.
-		/*!
-		 * \param sock The socket to test on
-		 * \return 0 in case of error/wrong protocol or the response time in milliseconds if everything went fine
-		 */
-		int checkSMTP(int sock);
+    //! Check if there is an SMTP server behind given socket connection.
+    /*!
+     * \param sock The socket to test on
+     * \return 0 in case of error/wrong protocol or the response time in milliseconds if everything went fine
+     */
+    int checkSMTP(int sock);
 
-		//! Check if there is an HTTP server behind given socket connection.
-		/*!
-		 * \param sock The socket to test on
-		 * \return 0 in case of error/wrong protocol or the response time in milliseconds if everything went fine
-		 */
-		int checkHTTP(int sock);
+    //! Check if there is an HTTP server behind given socket connection.
+    /*!
+     * \param sock The socket to test on
+     * \return 0 in case of error/wrong protocol or the response time in milliseconds if everything went fine
+     */
+    int checkHTTP(int sock);
 
-		//! Check if there is an IMAP server behind given socket connection.
-		/*!
-		 * \param sock The socket to test on
-		 * \return 0 in case of error/wrong protocol or the response time in milliseconds if everything went fine
-		 */
-		int checkIMAP(int sock);
+    //! Check if there is an IMAP server behind given socket connection.
+    /*!
+     * \param sock The socket to test on
+     * \return 0 in case of error/wrong protocol or the response time in milliseconds if everything went fine
+     */
+    int checkIMAP(int sock);
 
-		//! Check if there is an POP3 server behind given socket connection.
-		/*!
-		 * \param sock The socket to test on
-		 * \return 0 in case of error/wrong protocol or the response time in milliseconds if everything went fine
-		 */
-		int checkPOP3(int sock);
+    //! Check if there is an POP3 server behind given socket connection.
+    /*!
+     * \param sock The socket to test on
+     * \return 0 in case of error/wrong protocol or the response time in milliseconds if everything went fine
+     */
+    int checkPOP3(int sock);
 
-		//! Check if there is an SSH server behind given socket connection.
-		/*!
-		 * \param sock The socket to test on
-		 * \return 0 in case of error/wrong protocol or the response time in milliseconds if everything went fine
-		 */
-		int checkSSH(int sock);
+    //! Check if there is an SSH server behind given socket connection.
+    /*!
+     * \param sock The socket to test on
+     * \return 0 in case of error/wrong protocol or the response time in milliseconds if everything went fine
+     */
+    int checkSSH(int sock);
 
-		//! Check if there is an FTP server behind given socket connection.
-		/*!
-		 * \param sock The socket to test on
-		 * \return 0 in case of error/wrong protocol or the response time in milliseconds if everything went fine
-		 */
-		int checkFTP(int sock);
+    //! Check if there is an FTP server behind given socket connection.
+    /*!
+     * \param sock The socket to test on
+     * \return 0 in case of error/wrong protocol or the response time in milliseconds if everything went fine
+     */
+    int checkFTP(int sock);
 };
-
-#endif /*SERVICES_H_*/
+#endif                                            /*SERVICES_H_*/

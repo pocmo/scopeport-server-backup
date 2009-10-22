@@ -19,62 +19,82 @@
 #include "../internal.h"
 #include "../database/Database.h"
 
-mobilecData Clickatell::fetchSettings(mySQLData dbData){
+mobilecData Clickatell::fetchSettings(mySQLData dbData)
+{
   mobilecData clickatell;
 
   Database db(dbData);
-  if(db.initConnection()){
+  if(db.initConnection())
+  {
     const char* getSettingsSQL = "SELECT doMobileClickatell, mobilecUsername, mobilecPassword,"
-                                "mobilecAPIID FROM settings";
-    if(mysql_real_query(db.getHandle(), getSettingsSQL, strlen(getSettingsSQL)) == 0){
+      "mobilecAPIID FROM settings";
+    if(mysql_real_query(db.getHandle(), getSettingsSQL, strlen(getSettingsSQL)) == 0)
+    {
       MYSQL_RES* res;
-      if((res = mysql_store_result(db.getHandle())) != NULL){
+      if((res = mysql_store_result(db.getHandle())) != NULL)
+      {
         MYSQL_ROW row;
         row = mysql_fetch_row(res);
         stringstream result;
-        if(mysql_num_rows(res) > 0){
+        if(mysql_num_rows(res) > 0)
+        {
 
           // doMobileClickatell
-          if(row[0] != NULL){
-            if(strcmp(row[0], "1") == 0){
+          if(row[0] != NULL)
+          {
+            if(strcmp(row[0], "1") == 0)
+            {
               clickatell.doMobileC = 1;
-            }else{
+            }
+            else
+            {
               clickatell.doMobileC = 0;
             }
           }
 
           // mobilecUsername
-          if(row[1] != NULL){
+          if(row[1] != NULL)
+          {
             clickatell.username = row[1];
           }
 
           // mobilecPassword
-          if(row[2] != NULL){
+          if(row[2] != NULL)
+          {
             clickatell.password = row[2];
           }
 
           // mobilecPassword
-          if(row[3] != NULL){
+          if(row[3] != NULL)
+          {
             clickatell.apiID = row[3];
           }
 
-        }else{
+        }
+        else
+        {
           // Nothing fetched. Disable.
           clickatell.doMobileC = 0;
         }
-      }else{
+      }
+      else
+      {
         // Error. Disable.
-    	clickatell.doMobileC = 0;
+        clickatell.doMobileC = 0;
       }
       mysql_free_result(res);
-    }else{
+    }
+    else
+    {
       // Query failed. Disable.
       clickatell.doMobileC = 0;
     }
     mysql_close(db.getHandle());
-  }else{
+  }
+  else
+  {
     // Could not connect to DB. Disable.
-	  clickatell.doMobileC = 0;
+    clickatell.doMobileC = 0;
   }
 
   return clickatell;

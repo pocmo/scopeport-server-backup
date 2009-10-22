@@ -21,48 +21,59 @@
 #include "../notifications/GeneralNotifications.h"
 
 Log::Log(const char* myLogfile, mySQLData myDBData)
-			: Database(myDBData) {
-	logfile = myLogfile;
+: Database(myDBData)
+{
+  logfile = myLogfile;
 }
 
-void Log::putLog(int severity, string errorcode, string logmsg){
-	time_t rawtime;
+
+void Log::putLog(int severity, string errorcode, string logmsg)
+{
+  time_t rawtime;
   time(&rawtime);
   char* logtime = noNewLine(ctime(&rawtime), strlen(ctime(&rawtime)));
-	ofstream log("/var/log/scopeport-server.log", ios::app);
-	if(!log.fail()){
-		if(logmsg != ".newrun"){
-			log << logtime << " - " << logmsg << endl;
-			if(initConnection()){
-				MYSQL* init = getHandle();
-				char *safeMsg = new char[strlen(logmsg.c_str())*2 + 1];
-				mysql_real_escape_string(init, safeMsg,logmsg.c_str(),strlen(logmsg.c_str()));
-				stringstream query;
-				query 	<< "INSERT INTO `logmessages` (logtime,severity,errorcode,logmsg) VALUES('"
-						<< rawtime
-						<< "',\'"
-						<< severity
-						<< "',\'"
-						<< errorcode
-						<< "',\'"
-						<< safeMsg
-						<< "\')";
-				mysql_real_query(init, query.str().c_str(), strlen(query.str().c_str()));
-				mysql_close(init);
-			}
-		}else{
-			log << "--------------" << endl;
-		}
-	}
-	log.close();
+  ofstream log("/var/log/scopeport-server.log", ios::app);
+  if(!log.fail())
+  {
+    if(logmsg != ".newrun")
+    {
+      log << logtime << " - " << logmsg << endl;
+      if(initConnection())
+      {
+        MYSQL* init = getHandle();
+        char *safeMsg = new char[strlen(logmsg.c_str())*2 + 1];
+        mysql_real_escape_string(init, safeMsg,logmsg.c_str(),strlen(logmsg.c_str()));
+        stringstream query;
+        query   << "INSERT INTO `logmessages` (logtime,severity,errorcode,logmsg) VALUES('"
+          << rawtime
+          << "',\'"
+          << severity
+          << "',\'"
+          << errorcode
+          << "',\'"
+          << safeMsg
+          << "\')";
+        mysql_real_query(init, query.str().c_str(), strlen(query.str().c_str()));
+        mysql_close(init);
+      }
+    }
+    else
+    {
+      log << "--------------" << endl;
+    }
+  }
+  log.close();
 }
 
-void Log::debug(bool debug, string msg){
-  if(!debug){
+
+void Log::debug(bool debug, string msg)
+{
+  if(!debug)
+  {
     return;
   }
 
-	time_t rawtime;
+  time_t rawtime;
   time(&rawtime);
   char* logtime = noNewLine(ctime(&rawtime), strlen(ctime(&rawtime)));
   cout << logtime << " - " << msg << endl;

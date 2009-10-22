@@ -25,24 +25,24 @@
 
 #include "../internal.h"
 
-class Health{
-	public:
-		//! Returns the PID of the calling process.
-		static	string	getPID();
-		
-		//! Returns the virtual memory size of the calling process.
-		static	string	getVMSize();
-		
-		//! Returns the number of threads of the calling process.  
-		static	string	getThreads();
-		
-		//! Returns the size of some database tables or the whole database.  
-		/*!
-		 * \param dbData Database login information. 
-		 * \param type What size to get. 1: Total database size, 2: Size of table "sensorrecords", 3: Size of table "servicerecords".
-		 * \return Size in Megabyte
-		 */ 
-		static	double	getDBSize(mySQLData dbData, int type);
-};
+class Health
+{
+  public:
+    //! Returns the PID of the calling process.
+    static  string  getPID();
 
-#endif /*HEALTH_H_*/
+    //! Returns the virtual memory size of the calling process.
+    static  string  getVMSize();
+
+    //! Returns the number of threads of the calling process.
+    static  string  getThreads();
+
+    //! Returns the size of some database tables or the whole database.
+    /*!
+     * \param dbData Database login information.
+     * \param type What size to get. 1: Total database size, 2: Size of table "sensorrecords", 3: Size of table "servicerecords".
+     * \return Size in Megabyte
+     */
+    static  double  getDBSize(mySQLData dbData, int type);
+};
+#endif                                            /*HEALTH_H_*/

@@ -27,37 +27,36 @@
 #include "../internal.h"
 #include "../log/ConversationDebug.h"
 
-class Mail{
-	private:
-		//! Holds login, server and general SMTP information.
-		mailingData mailData;
+class Mail
+{
+  private:
+    //! Holds login, server and general SMTP information.
+    mailingData mailData;
     mySQLData dbData;
 
     ConversationDebug* p_debug;
 
     bool readSocket();
     bool sendSocket(string msg);
-	public:
-		Mail(mailingData myMailData, mySQLData myDBData);
-		//! Updates mailData
-		/*!
-		 * \sa mailData
-		 */
-		void updateSettings(mailingData myMailData);
+  public:
+    Mail(mailingData myMailData, mySQLData myDBData);
+    //! Updates mailData
+    /*!
+     * \sa mailData
+     */
+    void updateSettings(mailingData myMailData);
 
-		//! Sends email
-		/*!
-		 * \param toMail The receiver of this email
-		 * \param subject The subject of this email
-		 * \param mailText The text in this email
-		 * \return True on success, false in case of error.
-		 */
-		bool sendMail(string toMail, string subject, string mailText);
+    //! Sends email
+    /*!
+     * \param toMail The receiver of this email
+     * \param subject The subject of this email
+     * \param mailText The text in this email
+     * \return True on success, false in case of error.
+     */
+    bool sendMail(string toMail, string subject, string mailText);
 
-
-		//! Returns mailingData struct with settings from database.
-		static mailingData fetchSettings(mySQLData dbData);
+    //! Returns mailingData struct with settings from database.
+    static mailingData fetchSettings(mySQLData dbData);
 
 };
-
-#endif /*MAIL_H_*/
+#endif                                            /*MAIL_H_*/

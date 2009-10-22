@@ -18,7 +18,7 @@
 //!  Event logging
 /*!
  * Logs events to logfile and database based on loglevel and severity of event.
-*/
+ */
 
 #ifndef LOG_H_
 #define LOG_H_
@@ -26,22 +26,22 @@
 #include "../internal.h"
 #include "../database/Database.h"
 
-class Log : public Database {
-	private:
-		//! Path of logfile.  
-		const char* logfile;
-	public:
-		Log(const char* myLogfile, mySQLData myDBData);
-		
-		//! Writes message to database and logfile.  
-		/*!
-		 * \param severity The severity of this event.
-		 * \param errorcode The error code of this event.
-		 * \param logmsg The message that should be logged.
-		 */
-		void putLog(int severity, string errorcode, string logmsg);
+class Log : public Database
+{
+  private:
+    //! Path of logfile.
+    const char* logfile;
+  public:
+    Log(const char* myLogfile, mySQLData myDBData);
+
+    //! Writes message to database and logfile.
+    /*!
+     * \param severity The severity of this event.
+     * \param errorcode The error code of this event.
+     * \param logmsg The message that should be logged.
+     */
+    void putLog(int severity, string errorcode, string logmsg);
 
     static void debug(bool debug, string msg);
 };
-
-#endif /*LOG_H_*/
+#endif                                            /*LOG_H_*/

@@ -21,8 +21,9 @@
 #include "../internal.h"
 #include "../database/Database.h"
 
-class ConversationDebug : public Database {
-	private:
+class ConversationDebug : public Database
+{
+  private:
     unsigned int conversationID;
     string method;
     string remoteHost;
@@ -30,10 +31,9 @@ class ConversationDebug : public Database {
 
     void create();
     bool checkIfDisabledForThisMethod();
-	public:
+  public:
     ConversationDebug(mySQLData myDBData, string myMethod, string myRemoteHost);
 
     void log(unsigned int direction, string message);
 };
-
-#endif /*LOG_H_*/
+#endif                                            /*LOG_H_*/

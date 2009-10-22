@@ -22,13 +22,13 @@
 
 #include "../internal.h"
 
-class Timer {  
-	public:
-	    void startTimer();
-	    unsigned int stopTimer() const;
-	private:
-	    timeval m_timeval;
-	    const timeval& get_tv() const;
+class Timer
+{
+  public:
+    void startTimer();
+    unsigned int stopTimer() const;
+  private:
+    timeval m_timeval;
+    const timeval& get_tv() const;
 };
-
-#endif /*TIMER_H_*/
+#endif                                            /*TIMER_H_*/

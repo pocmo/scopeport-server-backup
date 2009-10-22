@@ -28,22 +28,22 @@
 //
 //bool spreadSNMP::openSocket(){
 //	if((servSock = socket(AF_INET, SOCK_STREAM, 0)) == -1){
-//		// Socket could not be created.  
+//		// Socket could not be created.
 //		return 0;
 //	}else{
-//		// Socket created.  
+//		// Socket created.
 //		setsockopt(servSock, SOL_SOCKET, SO_REUSEADDR, 0, sizeof(int));
 //		address.sin_family = AF_INET;
-//		// On which IPs to listen (INADDR_ANY -> any IP).  
+//		// On which IPs to listen (INADDR_ANY -> any IP).
 //		address.sin_addr.s_addr = INADDR_ANY;
-//		// On which port to listen.  
+//		// On which port to listen.
 //		int port = 12201;
 //		address.sin_port = htons(port);
 //		if(bind(servSock,(struct sockaddr *) &address,sizeof (address)) != 0) {
-//			// Could not bind to socket.  
+//			// Could not bind to socket.
 //			return 0;
 //		}else{
-//			// Bound to socket! Listen.  
+//			// Bound to socket! Listen.
 //			listen(servSock, 50);
 //			return 1;
 //		}
@@ -63,12 +63,12 @@
 //}
 //
 //const char* spreadSNMP::fetchMessage(int snmpid){
-//	// Prepare database connection.  
+//	// Prepare database connection.
 //	Database db(dbData);
-//	// Initialize database connection.  
+//	// Initialize database connection.
 //	if(db.initConnection()){
 //		MYSQL* init = db.getHandle();
-//		// Get all enabled rudechecks.  
+//		// Get all enabled rudechecks.
 //		stringstream query;
 //		query << "SELECT snmpdevices.address, snmpitems.ID, snmpitems.item "
 //				"FROM snmpitems "
@@ -77,11 +77,11 @@
 //				"WHERE snmpclients.ID = " << snmpid;
 //
 //		if(mysql_real_query(init, query.str().c_str(), strlen(query.str().c_str())) != 0){
-//			// Query was not successful.  
+//			// Query was not successful.
 //			mysql_close(init);
 //			return "err";
 //		}else{
-//			// Query successful.  
+//			// Query successful.
 //			MYSQL_RES* res = mysql_store_result(init);
 //			MYSQL_ROW row;
 //			stringstream message;
@@ -95,14 +95,14 @@
 //					        	<< "|";
 //				}
 //			}else{
-//				// There are no services in the database.  
+//				// There are no services in the database.
 //				mysql_free_result(res);
 //				mysql_close(init);
 //				return "err";
 //			}
 //			mysql_free_result(res);
 //			mysql_close(init);
-//			// Return result.  
+//			// Return result.
 //			return message.str().c_str();
 //		}
 //	}
@@ -110,25 +110,25 @@
 //}
 //
 //bool spreadSNMP::serveSNMP(int clntSock){
-//	
+//
 //	Log log(LOGFILE, dbData);
 //
 //	char buffer[1024] = "";
-//	
-//	// Init TLS session.  
+//
+//	// Init TLS session.
 //	gnutls_session_t session;
 //	gnutls_init(&session, GNUTLS_SERVER);
 //	gnutls_priority_set_direct(session, "NORMAL:+ANON-DH", NULL);
 //	gnutls_credentials_set(session, GNUTLS_CRD_ANON, anoncred);
 //	gnutls_dh_set_prime_bits(session, DH_BITS);
 //	gnutls_transport_set_ptr(session, (gnutls_transport_ptr_t) clntSock);
-//	
-//	// Do TLS handshake.  
+//
+//	// Do TLS handshake.
 //	int ret = gnutls_handshake(session);
-//			
-//	// Did the handshake succeed?  
+//
+//	// Did the handshake succeed?
 //	if(ret < 0){
-//		// No.  
+//		// No.
 //		gnutls_deinit(session);
 //		stringstream shakeError;
 //		shakeError	<< "SNMP: TLS handshake with host "
@@ -138,28 +138,28 @@
 //		close(clntSock);
 //		return 0;
 //	}
-//			
-//	// TLS handshake completed.  
-//	
-//	// Get request.  
-//	
+//
+//	// TLS handshake completed.
+//
+//	// Get request.
+//
 //	ret = gnutls_record_recv(session, buffer, 1024);
-//	
+//
 //	istringstream iss;
 //	int snmpid = 0;
 //	iss.str(buffer);
 //	iss >> snmpid;
-//	
+//
 //	const char* message = fetchMessage(snmpid);
-//	
+//
 //	if(strcmp(message,"err" ) == 0){
 //		close(clntSock);
 //		return 0;
 //	}
-//	
-//	// Send reply.  
+//
+//	// Send reply.
 //	gnutls_record_send(session, message, strlen(message));
-//		
+//
 //	gnutls_bye (session, GNUTLS_SHUT_RDWR);
 //	gnutls_deinit(session);
 //	gnutls_anon_free_server_credentials(anoncred);

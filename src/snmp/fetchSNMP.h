@@ -18,13 +18,13 @@
 #ifndef FETCHSNMP_H_
 #define FETCHSNMP_H_
 
-class fetchSNMP{
-	private:
-		int	port;
-		int	socket;
-	public:
-		fetchSNMP(int mySocket);
-		bool openSocket();
+class fetchSNMP
+{
+  private:
+    int port;
+    int socket;
+  public:
+    fetchSNMP(int mySocket);
+    bool openSocket();
 };
-
-#endif /*FETCHSNMP_H_*/
+#endif                                            /*FETCHSNMP_H_*/

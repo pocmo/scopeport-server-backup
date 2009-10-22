@@ -17,24 +17,29 @@
 
 #include "Timer.h"
 
-void Timer::startTimer() {
-	m_timeval = get_tv ();
+void Timer::startTimer()
+{
+  m_timeval = get_tv ();
 }
 
-unsigned int Timer::stopTimer() const {
-	timeval timeval = get_tv ();
-	int returnage = ( timeval.tv_sec - m_timeval.tv_sec ) * 1000 + (( timeval.tv_usec - m_timeval.tv_usec ) / 1000);
 
-	// Round the time up to one millisecond if it is zero.
-	if(returnage == 0)
-		returnage = 1;
+unsigned int Timer::stopTimer() const
+{
+  timeval timeval = get_tv ();
+  int returnage = ( timeval.tv_sec - m_timeval.tv_sec ) * 1000 + (( timeval.tv_usec - m_timeval.tv_usec ) / 1000);
 
-	return returnage;
+  // Round the time up to one millisecond if it is zero.
+  if(returnage == 0)
+    returnage = 1;
+
+  return returnage;
 }
 
-const timeval& Timer::get_tv() const {
-	static timeval tv;
-	static struct timezone tz;
-	gettimeofday ( &tv, &tz );
-	return tv;
+
+const timeval& Timer::get_tv() const
+{
+  static timeval tv;
+  static struct timezone tz;
+  gettimeofday ( &tv, &tz );
+  return tv;
 }

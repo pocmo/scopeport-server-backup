@@ -26,66 +26,66 @@
 #include "../internal.h"
 #include "../database/Database.h"
 
-class EmergencyNotifications : public Database {
-	private:
-		//! Holds login and connection information of MySQL database.  
-		mySQLData dbData;
-		
-		//! Holds SMTP login information and settings.
-		mailingData		mailData;
-		
-		//! Holds XMPP login information and settings.
-		XMPPData		xmppData;
-		
-		//! Struct: Holds information of Clickatell SMS Gateway API.
-		mobilecData clickatellData;
-		
-		//! Holds information about every receiver that needs to be informed.  
-		map<int,string>	notificationList;
-	public:
-		//! Constructor
-		/*!
-		 * \sa dbData
-		 * \sa mailData
-		 * \sa xmppData
-		 */
-		EmergencyNotifications(mySQLData myDBData, mailingData myMailData,
-								XMPPData myXMPPData, mobilecData myMobilecData);
-		
-		//! Fetch e.g. email adresses or JIDs that need to be informed. Fills notificationList.
-		/*!
-		 * \sa notificationList
-		 * \return 1: Emergency notifications to send fetched, 0: Nothing to send, -1: Error
-		 */
-		int		fetchTasks();
-		
-		//! Return the number of receivers in notificationList.
-		/*!
-		 * \sa notificationList
-		 */
-		int		getListSize();
-		
-		//! Sends a message to the e.g. email address of JID with given notificatioList ID.
-		/*!
-		 * \param recvNum The index of receiver in notificationList
-		 * \return 1: Message was sent, 0: Message could not be send, -1: Syntax error of receiver. No attempt to send message was made.
-		 * \sa notificationList
-		 */
-		int		sendMessage(int recvNum);
-		
-		//! Splits an notificationList entry to its relevant parts.
-		/*!
-		 * \sa notificationList
-		 */
-		enData	splitEmergencyInformation(int recvNum);
-		
-		//! Marks an receiver as notified or not.  
-		/*!
-		 * \param recvNum The index of receiver in notificationList
-		 * \param status The status this receiver should be set to.
-		 * \sa notificationList
-		 */
-		bool	markReceiver(int recvNum, int status);	
-};
+class EmergencyNotifications : public Database
+{
+  private:
+    //! Holds login and connection information of MySQL database.
+    mySQLData dbData;
 
-#endif /*EMERGENCYNOTIFICATIONS_H_*/
+    //! Holds SMTP login information and settings.
+    mailingData   mailData;
+
+    //! Holds XMPP login information and settings.
+    XMPPData    xmppData;
+
+    //! Struct: Holds information of Clickatell SMS Gateway API.
+    mobilecData clickatellData;
+
+    //! Holds information about every receiver that needs to be informed.
+    map<int,string> notificationList;
+  public:
+    //! Constructor
+    /*!
+     * \sa dbData
+     * \sa mailData
+     * \sa xmppData
+     */
+    EmergencyNotifications(mySQLData myDBData, mailingData myMailData,
+      XMPPData myXMPPData, mobilecData myMobilecData);
+
+    //! Fetch e.g. email adresses or JIDs that need to be informed. Fills notificationList.
+    /*!
+     * \sa notificationList
+     * \return 1: Emergency notifications to send fetched, 0: Nothing to send, -1: Error
+     */
+    int   fetchTasks();
+
+    //! Return the number of receivers in notificationList.
+    /*!
+     * \sa notificationList
+     */
+    int   getListSize();
+
+    //! Sends a message to the e.g. email address of JID with given notificatioList ID.
+    /*!
+     * \param recvNum The index of receiver in notificationList
+     * \return 1: Message was sent, 0: Message could not be send, -1: Syntax error of receiver. No attempt to send message was made.
+     * \sa notificationList
+     */
+    int   sendMessage(int recvNum);
+
+    //! Splits an notificationList entry to its relevant parts.
+    /*!
+     * \sa notificationList
+     */
+    enData  splitEmergencyInformation(int recvNum);
+
+    //! Marks an receiver as notified or not.
+    /*!
+     * \param recvNum The index of receiver in notificationList
+     * \param status The status this receiver should be set to.
+     * \sa notificationList
+     */
+    bool  markReceiver(int recvNum, int status);
+};
+#endif                                            /*EMERGENCYNOTIFICATIONS_H_*/

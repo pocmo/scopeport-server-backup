@@ -26,112 +26,151 @@
 #include "../misc/Timer.h"
 
 Services::Services(mySQLData myDBData, unsigned int myHandlerID)
-			: Database(myDBData){
-	dbData = myDBData;
- 	serviceID = 0;
-	handlerID = myHandlerID;
-	responseTime = 0;
-	m_responseTime1 = 0;
-	m_responseTime2 = 0;
-	timeout = 0;
+: Database(myDBData)
+{
+  dbData = myDBData;
+  serviceID = 0;
+  handlerID = myHandlerID;
+  responseTime = 0;
+  m_responseTime1 = 0;
+  m_responseTime2 = 0;
+  timeout = 0;
 }
 
-int Services::getFirstResponseTime(){
-	return m_responseTime1;
+
+int Services::getFirstResponseTime()
+{
+  return m_responseTime1;
 }
 
-int Services::getSecondResponseTime(){
-	return m_responseTime2;
+
+int Services::getSecondResponseTime()
+{
+  return m_responseTime2;
 }
 
-void Services::setServiceID(unsigned int x){
-	serviceID = x;
+
+void Services::setServiceID(unsigned int x)
+{
+  serviceID = x;
 }
 
-void Services::setAllowedFails(unsigned int x){
-	allowedFails = x;
+
+void Services::setAllowedFails(unsigned int x)
+{
+  allowedFails = x;
 }
 
-void Services::setPort(unsigned int x){
-	port = x;
+
+void Services::setPort(unsigned int x)
+{
+  port = x;
 }
 
-void Services::setMaximumResponse(unsigned int x){
-	maximumResponse = x;
+
+void Services::setMaximumResponse(unsigned int x)
+{
+  maximumResponse = x;
 }
 
-void Services::setHost(string x){
-	host = x;
+
+void Services::setHost(string x)
+{
+  host = x;
 }
 
-void Services::setServiceType(string x){
-	serviceType = x;
+
+void Services::setServiceType(string x)
+{
+  serviceType = x;
 }
 
-void Services::setNotiGroup(string x){
-	notiGroup = x;
+
+void Services::setNotiGroup(string x)
+{
+  notiGroup = x;
 }
 
-void Services::setHostname(string x){
-	hostname = x;
+
+void Services::setHostname(string x)
+{
+  hostname = x;
 }
 
-unsigned int Services::getServiceID(){
-	return serviceID;
+
+unsigned int Services::getServiceID()
+{
+  return serviceID;
 }
 
-unsigned int Services::getHandlerID(){
-	return handlerID;
+
+unsigned int Services::getHandlerID()
+{
+  return handlerID;
 }
 
-int Services::getMaximumResponse(){
-	return maximumResponse;
+
+int Services::getMaximumResponse()
+{
+  return maximumResponse;
 }
 
-unsigned int Services::getTimeout(){
+
+unsigned int Services::getTimeout()
+{
   return timeout;
 }
 
-void Services::setTimeout(unsigned int myTimeout){
+
+void Services::setTimeout(unsigned int myTimeout)
+{
   timeout = myTimeout;
 }
 
-bool Services::updateSettings(){
+
+bool Services::updateSettings()
+{
   // Return false if the service id has not been set yet.
-  if(serviceID == 0){
+  if(serviceID == 0)
+  {
     return 0;
   }
 
-	if(initConnection()){
-		stringstream query;
+  if(initConnection())
+  {
+    stringstream query;
     query << "SELECT host, port, service_type, allowed_fails, maxres, host, timeout FROM services "
-				     "WHERE id = "
-          << getServiceID();
-		if(mysql_real_query(getHandle(), query.str().c_str(), strlen(query.str().c_str())) == 0){
-			// Query successful.
-			MYSQL_ROW serviceResult;
-			MYSQL_RES* res = mysql_store_result(getHandle());
-			serviceResult = mysql_fetch_row(res);
-			if(mysql_num_rows(res) > 0){
-        		// We fetched the service to update. Update!
-				setHost(serviceResult[0]);
-				setPort(stringToInteger(serviceResult[1]));
-				setServiceType(serviceResult[2]);
-				setAllowedFails(stringToInteger(serviceResult[3]));
-				setMaximumResponse(stringToInteger(serviceResult[4]));
-				setHostname(serviceResult[5]);
-        		setTimeout(stringToInteger(serviceResult[6]));
+      "WHERE id = "
+      << getServiceID();
+    if(mysql_real_query(getHandle(), query.str().c_str(), strlen(query.str().c_str())) == 0)
+    {
+      // Query successful.
+      MYSQL_ROW serviceResult;
+      MYSQL_RES* res = mysql_store_result(getHandle());
+      serviceResult = mysql_fetch_row(res);
+      if(mysql_num_rows(res) > 0)
+      {
+        // We fetched the service to update. Update!
+        setHost(serviceResult[0]);
+        setPort(stringToInteger(serviceResult[1]));
+        setServiceType(serviceResult[2]);
+        setAllowedFails(stringToInteger(serviceResult[3]));
+        setMaximumResponse(stringToInteger(serviceResult[4]));
+        setHostname(serviceResult[5]);
+        setTimeout(stringToInteger(serviceResult[6]));
 
-        		// Clean up.
-				mysql_free_result(res);
-				mysql_close(getHandle());
+        // Clean up.
+        mysql_free_result(res);
+        mysql_close(getHandle());
 
         // Great success. </borat>
         return 1;
-      }else{
+      }
+      else
+      {
         // Could not find service with specified ID.
-				mysql_free_result(res);
-				mysql_close(getHandle());
+        mysql_free_result(res);
+        mysql_close(getHandle());
       }
     }
   }
@@ -140,480 +179,561 @@ bool Services::updateSettings(){
   return 0;
 }
 
-int Services::checkService(int run){
-	Log log(LOGFILE, dbData);
-	int sock;
-	struct sockaddr_in server;
-	struct hostent *host;
+
+int Services::checkService(int run)
+{
+  Log log(LOGFILE, dbData);
+  int sock;
+  struct sockaddr_in server;
+  struct hostent *host;
 
   /* 
    * Store the response time of the first run in responseTime1
    * and the second run in responseTime2.
    */
   int *p_responseTime;
-  if(run == 1){
+  if(run == 1)
+  {
     p_responseTime = &m_responseTime1;
-  }else{
+  }
+  else
+  {
     p_responseTime = &m_responseTime2;
   }
 
-	// Create socket.
-	sock = socket(AF_INET, SOCK_STREAM, 0);
-	if(sock < 0){
-		// Creating socket failed.
-		close(sock);
-		return SERVICE_STATE_INTERR;
-	}
+  // Create socket.
+  sock = socket(AF_INET, SOCK_STREAM, 0);
+  if(sock < 0)
+  {
+    // Creating socket failed.
+    close(sock);
+    return SERVICE_STATE_INTERR;
+  }
 
-	// Verify host.
-	server.sin_family = AF_INET;
-	host = gethostbyname(hostname.c_str());
-	if(host==(struct hostent *) 0){
-		// Host unknown.
-		close(sock);
-		return SERVICE_STATE_CONFAIL;
-	}
+  // Verify host.
+  server.sin_family = AF_INET;
+  host = gethostbyname(hostname.c_str());
+  if(host==(struct hostent *) 0)
+  {
+    // Host unknown.
+    close(sock);
+    return SERVICE_STATE_CONFAIL;
+  }
 
-	// Connect to defined port.
-	memcpy((char *) &server.sin_addr, (char *) host->h_addr, host->h_length);
-	server.sin_port=htons(port);
+  // Connect to defined port.
+  memcpy((char *) &server.sin_addr, (char *) host->h_addr, host->h_length);
+  server.sin_port=htons(port);
 
   // Set socket to non-blocking.
   long arg;
-  arg = fcntl(sock, F_GETFL, NULL); 
-  arg |= O_NONBLOCK; 
+  arg = fcntl(sock, F_GETFL, NULL);
+  arg |= O_NONBLOCK;
   fcntl(sock, F_SETFL, arg);
 
-	// Connect and measure time it takes to connect.
-	Timer t;
-	t.startTimer();
-	int res = connect(sock, (struct sockaddr *) &server, sizeof server);
+  // Connect and measure time it takes to connect.
+  Timer t;
+  t.startTimer();
+  int res = connect(sock, (struct sockaddr *) &server, sizeof server);
 
-  int valopt; 
-  fd_set myset; 
-  struct timeval tv; 
-  socklen_t lon; 
+  int valopt;
+  fd_set myset;
+  struct timeval tv;
+  socklen_t lon;
 
-	if(res < 0){
-    if(errno == EINPROGRESS){
-      tv.tv_sec = getTimeout(); 
-      tv.tv_usec = 0; 
-      FD_ZERO(&myset); 
-      FD_SET(sock, &myset); 
-      if(select(sock+1, NULL, &myset, NULL, &tv) > 0){
-        lon = sizeof(int); 
-        getsockopt(sock, SOL_SOCKET, SO_ERROR, (void*)(&valopt), &lon); 
-        if(valopt != 0){
+  if(res < 0)
+  {
+    if(errno == EINPROGRESS)
+    {
+      tv.tv_sec = getTimeout();
+      tv.tv_usec = 0;
+      FD_ZERO(&myset);
+      FD_SET(sock, &myset);
+      if(select(sock+1, NULL, &myset, NULL, &tv) > 0)
+      {
+        lon = sizeof(int);
+        getsockopt(sock, SOL_SOCKET, SO_ERROR, (void*)(&valopt), &lon);
+        if(valopt != 0)
+        {
           // Error.
-			    close(sock);
+          close(sock);
           return SERVICE_STATE_CONFAIL;
         }
-      }else{
+      }
+      else
+      {
         // Timeout.
-			  close(sock);
+        close(sock);
         return SERVICE_STATE_TIMEOUT;
       }
-    }else{
+    }
+    else
+    {
       // Error on connect.
-			close(sock);
+      close(sock);
       return SERVICE_STATE_CONFAIL;
     }
   }
 
-	*p_responseTime = t.stopTimer();
+  *p_responseTime = t.stopTimer();
 
   // We are connected! Set socket back to blocking mode.
-  arg = fcntl(sock, F_GETFL, NULL); 
-  arg &= (~O_NONBLOCK); 
-  fcntl(sock, F_SETFL, arg); 
+  arg = fcntl(sock, F_GETFL, NULL);
+  arg &= (~O_NONBLOCK);
+  fcntl(sock, F_SETFL, arg);
 
-  if(serviceType == "none"){
-		// This service needs no protocol check.
-  	// Service is running if we arrived here.
+  if(serviceType == "none")
+  {
+    // This service needs no protocol check.
+    // Service is running if we arrived here.
     close(sock);
-	  return SERVICE_STATE_OKAY;
-	}else if(serviceType == "smtp"){
-		*p_responseTime = checkSMTP(sock);
-	}else if(serviceType == "http"){
-		*p_responseTime = checkHTTP(sock);
-	}else if(serviceType == "imap"){
-		*p_responseTime = checkIMAP(sock);
-	}else if(serviceType == "pop3"){
-		*p_responseTime = checkPOP3(sock);
-	}else if(serviceType == "ssh"){
-		*p_responseTime = checkSSH(sock);
-	}else if(serviceType == "ftp"){
-		*p_responseTime = checkFTP(sock);
-	}else{
-		// Unknown service type.
-		close(sock);
-		return SERVICE_STATE_INTERR;
-	}
+    return SERVICE_STATE_OKAY;
+  }
+  else if(serviceType == "smtp")
+  {
+    *p_responseTime = checkSMTP(sock);
+  }
+  else if(serviceType == "http")
+  {
+    *p_responseTime = checkHTTP(sock);
+  }
+  else if(serviceType == "imap")
+  {
+    *p_responseTime = checkIMAP(sock);
+  }
+  else if(serviceType == "pop3")
+  {
+    *p_responseTime = checkPOP3(sock);
+  }
+  else if(serviceType == "ssh")
+  {
+    *p_responseTime = checkSSH(sock);
+  }
+  else if(serviceType == "ftp")
+  {
+    *p_responseTime = checkFTP(sock);
+  }
+  else
+  {
+    // Unknown service type.
+    close(sock);
+    return SERVICE_STATE_INTERR;
+  }
 
   close(sock);
 
   // Check if there was an error in the protocol check.
-  switch(*p_responseTime){
-      case -1:
-        return SERVICE_STATE_CONFAIL;
-        break;
-      case -2:
-        return SERVICE_STATE_TIMEOUT;
-        break;
-      case -3:
-        return SERVICE_STATE_INTERR;
-        break;
+  switch(*p_responseTime)
+  {
+    case -1:
+      return SERVICE_STATE_CONFAIL;
+      break;
+    case -2:
+      return SERVICE_STATE_TIMEOUT;
+      break;
+    case -3:
+      return SERVICE_STATE_INTERR;
+      break;
   }
 
   // The service is running if we arrived here.
-	return SERVICE_STATE_OKAY;
+  return SERVICE_STATE_OKAY;
 }
 
-bool Services::buildAverageResponseTime(){
+
+bool Services::buildAverageResponseTime()
+{
   // Return false if the difference is too high.
-  
+
   // Build the average response time.
   responseTime = (m_responseTime1 + m_responseTime2)/2;
   return 1;
 }
 
-void Services::updateStatus(int status){
+
+void Services::updateStatus(int status)
+{
   m_status = status;
-	Database db(dbData);
-	Log log(LOGFILE, dbData);
-	if(initConnection()){
-		time_t rawtime;
-		stringstream query;
-		query	<< "UPDATE services SET state = "
-				<< status
-				<< " , lastcheck = "
-				<< time(&rawtime)
-				<< " WHERE id = "
-				<< serviceID;
-		setQuery(getHandle(), query.str());
-		mysql_close(getHandle());
-	}else{
-		log.putLog(2, "4000", "Could not update status of service");
-		mysql_close(getHandle());
-	}
+  Database db(dbData);
+  Log log(LOGFILE, dbData);
+  if(initConnection())
+  {
+    time_t rawtime;
+    stringstream query;
+    query << "UPDATE services SET state = "
+      << status
+      << " , lastcheck = "
+      << time(&rawtime)
+      << " WHERE id = "
+      << serviceID;
+    setQuery(getHandle(), query.str());
+    mysql_close(getHandle());
+  }
+  else
+  {
+    log.putLog(2, "4000", "Could not update status of service");
+    mysql_close(getHandle());
+  }
 }
 
-bool Services::checkResponseTime(){
+
+bool Services::checkResponseTime()
+{
 
   // Build the average response time.
   buildAverageResponseTime();
 
-	// Initialize database connection.
-	if(initConnection()){
+  // Initialize database connection.
+  if(initConnection())
+  {
 
-		string table;
+    string table;
 
-		stringstream query;
-		query	<< "SELECT maxres FROM services WHERE id = "
-		      << serviceID;
+    stringstream query;
+    query << "SELECT maxres FROM services WHERE id = "
+      << serviceID;
 
-		setMaximumResponse(stringToInteger(sGetQuery(query.str()).c_str()));
+    setMaximumResponse(stringToInteger(sGetQuery(query.str()).c_str()));
 
-		if(responseTime > getMaximumResponse()){
-			// Higher than defined maximum!
-			mysql_close(getHandle());
-			return 0;
-		}
-
-		mysql_close(getHandle());
-	}
-
-	// All went fine. The response was not higher than defined maximum.
-	return 1;
-}
-
-void Services::sendWarning(){
-	Log log(LOGFILE, dbData);
-
-	// Initialize database connection.
-	if(initConnection()){
-
-		mailingData mailData;
-		XMPPData xmppData;
-		mobilecData mobilecData;
-
-		mailData = Mail::fetchSettings(dbData);
-		xmppData = XMPP::fetchSettings(dbData);
-		mobilecData = Clickatell::fetchSettings(dbData);
-
-		// Create mailing object.
-		Mail mailing(mailData, dbData);
-
-		// Check for mailing parameters.
-		if(mailData.doMailing && !mailData.mailServer.empty() > 0 && mailData.mailPort > 0
-				&& !mailData.mailHostname.empty() && !mailData.mailFrom.empty()){
-			// All mailing parameters set correctly.
-			mailData.doMailing = 1;
-		}else{
-			// Parameters missing - Disable mailing.
-			mailData.doMailing = 0;
-		}
-
-		// Create XMPP object.
-		XMPP xmpp(xmppData, dbData);
-
-		// Check for XMPP parameters.
-		if(xmppData.doXMPP && !xmppData.xmppServer.empty() && xmppData.xmppPort > 0
-				&& !xmppData.xmppUser.empty() && !xmppData.xmppPass.empty()
-				&& !xmppData.xmppResource.empty()){
-			// All XMPP parameters set correctly.
-			xmppData.doXMPP = 1;
-		}else{
-			// Parameters missing - Disable XMPP.
-			xmppData.doXMPP = 0;
-		}
-
-		// Check for Clickatell SMS parameters.
-		if(mobilecData.doMobileC && !mobilecData.username.empty()
-				&& !mobilecData.password.empty()
-				&& !mobilecData.apiID.empty()){
-			mobilecData.doMobileC = 1;
-		}else{
-			// Parameters missing - Disable Clickatell SMS.
-			mobilecData.doMobileC = 0;
-		}
-
-		stringstream warningSubj;
-		stringstream warningMsg;
-
-		string serviceName;
-
-		serviceName = sGetQuery(Information::getServiceName(serviceID));
-
-		int qms = 0;
-
-    if(m_status == 2){
-			// It is a warning for a too high response time.
-			warningSubj << "Warning! Service \""
-						<< serviceName
-						<< "\" has a too high response time!";
-
-			warningMsg	<< "Warning! Service \""
-						<< serviceName
-						<< "\" ("
-						<< hostname
-						<< " on Port "
-						<< port
-						<< ") has response time \""
-						<< responseTime
-						<< "ms\"!";
-			qms = responseTime;
-		}else if(m_status == 4){
-      // It is a warning for a timed out service.
-			warningSubj << "Warning! Service \""
-						<< serviceName
-						<< "\" timed out!";
-
-			warningMsg	<< "Warning! Service \""
-						<< serviceName
-						<< "\" ("
-						<< hostname
-						<< " on Port "
-						<< port
-						<< ") timed out.";
-    }else{
-			// It is a "normal" failed service.
-			warningSubj << "Warning! Service \""
-						<< serviceName
-						<< "\" seems to have failed!";
-
-			warningMsg	<< "Warning! Service \""
-						<< serviceName
-						<< "\" ("
-						<< hostname
-						<< " on Port "
-						<< port
-						<< ") seems to have failed!";
+    if(responseTime > getMaximumResponse())
+    {
+      // Higher than defined maximum!
+      mysql_close(getHandle());
+      return 0;
     }
 
-		string lastWarn;
-		lastWarn = sGetQuery(Information::getLastServiceWarn(serviceID));
+    mysql_close(getHandle());
+  }
 
-		time_t rawtime;
-		time(&rawtime);
-
-		// Only send warning all 6 hours.
-		if(rawtime-stringToInteger(lastWarn.c_str()) > 21600){
-
-			// Build query for scheduled downtime check.
-			stringstream checkDowntimeQuery;
-			checkDowntimeQuery	<< "SELECT id FROM downtimes"
-									" WHERE serviceid = " << serviceID <<
-								   " AND type = 2 AND `from` < " << rawtime <<
-								   " AND `to` > " << rawtime;
-
-
-			if(mysql_real_query(getHandle(), checkDowntimeQuery.str().c_str(),
-					strlen(checkDowntimeQuery.str().c_str())) != 0){
-				// Query was not successful.
-				log.putLog(1, "5678", "Could not fetch downtimes for service alarm.");
-				mysql_close(getHandle());
-				return;
-			}else{
-				// Query successful.
-
-				time_t alarmtime;
-				time(&alarmtime);
-
-				// Check if a downtime was scheduled for this service.
-				MYSQL_RES* sdres = mysql_store_result(getHandle());
-				if(mysql_num_rows(sdres) > 0){
-					// A downtime was scheduled. Don't warn.
-					mysql_free_result(sdres);
-					mysql_close(getHandle());
-					return;
-				}
-				mysql_free_result(sdres);
-
-				// We need to send warnings.
-
-				// Set last warning time.
-				time_t warntime;
-				time(&warntime);
-				setQuery(getHandle(), Information::setLastServiceWarn(warntime, serviceID));
-
-				// Insert warning into database.
-				stringstream alarmSQL;
-				alarmSQL	<< "INSERT INTO alarms (alarm_type, timestamp, service_id, ms, service_state) VALUES ('2','"
-							<< alarmtime
-							<< "','"
-							<< serviceID
-							<< "','"
-							<< qms
-							<< "','"
-							<< m_status
-							<< "')";
-
-				if(!setQuery(getHandle(), alarmSQL.str()))
-					log.putLog(2, "002", "Could not update alarms table.");
-
-
-				if(mailData.doMailing){
-					vector<string> mailRecvList = Information::getMailWarningReceivers(getHandle(),
-							sGetQuery(Information::getServiceReceiverGroup(serviceID)), "4");
-
-					int mailRecvCount = 0;
-					int mailRecvListSize = mailRecvList.size();
-					while(mailRecvCount < mailRecvListSize){
-						if(!mailRecvList[mailRecvCount].empty())
-							mailing.sendMail(mailRecvList[mailRecvCount], warningSubj.str(), warningMsg.str());
-						mailRecvCount++;
-					}
-				}
-
-				// Get XMPP receivers.
-				if(xmppData.doXMPP){
-					vector<string> xmppRecvList = Information::getXMPPWarningReceivers(getHandle(),
-												sGetQuery(Information::getServiceReceiverGroup(
-														serviceID)),"3");
-
-					// Send a warning message to every XMPP receiver.
-					int xmppRecvCount = 0;
-					int xmppRecvListSize = xmppRecvList.size();
-					while(xmppRecvCount < xmppRecvListSize){
-							if(!xmppRecvList[xmppRecvCount].empty())
-									xmpp.sendMessage(warningMsg.str(), xmppRecvList[xmppRecvCount]);
-							xmppRecvCount++;
-					}
-				}
-
-
-				if(mobilecData.doMobileC && mailData.doMailing){
-					vector<string> mobilecRecvList = Information::getMobileCWarningReceivers(getHandle(),
-							sGetQuery(Information::getServiceReceiverGroup(serviceID)), "4");
-					int mobilecRecvCount = 0;
-					int mobilecRecvListSize = mobilecRecvList.size();
-					while(mobilecRecvCount < mobilecRecvListSize){
-						if(!mobilecRecvList[mobilecRecvCount].empty()){
-							// Build the message that fits to the API.
-							stringstream newWarningMsg;
-							newWarningMsg	<< "user:" << mobilecData.username << endl
-											<< "password:" << mobilecData.password << endl
-											<< "api_id:" << mobilecData.apiID << endl
-											<< "to:" << mobilecRecvList[mobilecRecvCount] << endl
-											<< "text:" << warningMsg.str();
-							mailing.sendMail(CLICKATELLMAIL, warningSubj.str(), newWarningMsg.str());
-						}
-						mobilecRecvCount++;
-					}
-				}
-
-			}
-		}
-		mysql_close(getHandle());
-	}else{
-		log.putLog(2, "1234", "Could not connect to database for service warning/alarm.");
-	}
+  // All went fine. The response was not higher than defined maximum.
+  return 1;
 }
 
-bool Services::storeResponseTime(){
+
+void Services::sendWarning()
+{
+  Log log(LOGFILE, dbData);
+
+  // Initialize database connection.
+  if(initConnection())
+  {
+
+    mailingData mailData;
+    XMPPData xmppData;
+    mobilecData mobilecData;
+
+    mailData = Mail::fetchSettings(dbData);
+    xmppData = XMPP::fetchSettings(dbData);
+    mobilecData = Clickatell::fetchSettings(dbData);
+
+    // Create mailing object.
+    Mail mailing(mailData, dbData);
+
+    // Check for mailing parameters.
+    if(mailData.doMailing && !mailData.mailServer.empty() > 0 && mailData.mailPort > 0
+      && !mailData.mailHostname.empty() && !mailData.mailFrom.empty())
+    {
+      // All mailing parameters set correctly.
+      mailData.doMailing = 1;
+    }
+    else
+    {
+      // Parameters missing - Disable mailing.
+      mailData.doMailing = 0;
+    }
+
+    // Create XMPP object.
+    XMPP xmpp(xmppData, dbData);
+
+    // Check for XMPP parameters.
+    if(xmppData.doXMPP && !xmppData.xmppServer.empty() && xmppData.xmppPort > 0
+      && !xmppData.xmppUser.empty() && !xmppData.xmppPass.empty()
+      && !xmppData.xmppResource.empty())
+    {
+      // All XMPP parameters set correctly.
+      xmppData.doXMPP = 1;
+    }
+    else
+    {
+      // Parameters missing - Disable XMPP.
+      xmppData.doXMPP = 0;
+    }
+
+    // Check for Clickatell SMS parameters.
+    if(mobilecData.doMobileC && !mobilecData.username.empty()
+      && !mobilecData.password.empty()
+      && !mobilecData.apiID.empty())
+    {
+      mobilecData.doMobileC = 1;
+    }
+    else
+    {
+      // Parameters missing - Disable Clickatell SMS.
+      mobilecData.doMobileC = 0;
+    }
+
+    stringstream warningSubj;
+    stringstream warningMsg;
+
+    string serviceName;
+
+    serviceName = sGetQuery(Information::getServiceName(serviceID));
+
+    int qms = 0;
+
+    if(m_status == 2)
+    {
+      // It is a warning for a too high response time.
+      warningSubj << "Warning! Service \""
+        << serviceName
+        << "\" has a too high response time!";
+
+      warningMsg  << "Warning! Service \""
+        << serviceName
+        << "\" ("
+        << hostname
+        << " on Port "
+        << port
+        << ") has response time \""
+        << responseTime
+        << "ms\"!";
+      qms = responseTime;
+    }
+    else if(m_status == 4)
+    {
+      // It is a warning for a timed out service.
+      warningSubj << "Warning! Service \""
+        << serviceName
+        << "\" timed out!";
+
+      warningMsg  << "Warning! Service \""
+        << serviceName
+        << "\" ("
+        << hostname
+        << " on Port "
+        << port
+        << ") timed out.";
+    }
+    else
+    {
+      // It is a "normal" failed service.
+      warningSubj << "Warning! Service \""
+        << serviceName
+        << "\" seems to have failed!";
+
+      warningMsg  << "Warning! Service \""
+        << serviceName
+        << "\" ("
+        << hostname
+        << " on Port "
+        << port
+        << ") seems to have failed!";
+    }
+
+    string lastWarn;
+    lastWarn = sGetQuery(Information::getLastServiceWarn(serviceID));
+
+    time_t rawtime;
+    time(&rawtime);
+
+    // Only send warning all 6 hours.
+    if(rawtime-stringToInteger(lastWarn.c_str()) > 21600)
+    {
+
+      // Build query for scheduled downtime check.
+      stringstream checkDowntimeQuery;
+      checkDowntimeQuery  << "SELECT id FROM downtimes"
+        " WHERE serviceid = " << serviceID <<
+        " AND type = 2 AND `from` < " << rawtime <<
+        " AND `to` > " << rawtime;
+
+      if(mysql_real_query(getHandle(), checkDowntimeQuery.str().c_str(),
+        strlen(checkDowntimeQuery.str().c_str())) != 0)
+      {
+        // Query was not successful.
+        log.putLog(1, "5678", "Could not fetch downtimes for service alarm.");
+        mysql_close(getHandle());
+        return;
+      }
+      else
+      {
+        // Query successful.
+
+        time_t alarmtime;
+        time(&alarmtime);
+
+        // Check if a downtime was scheduled for this service.
+        MYSQL_RES* sdres = mysql_store_result(getHandle());
+        if(mysql_num_rows(sdres) > 0)
+        {
+          // A downtime was scheduled. Don't warn.
+          mysql_free_result(sdres);
+          mysql_close(getHandle());
+          return;
+        }
+        mysql_free_result(sdres);
+
+        // We need to send warnings.
+
+        // Set last warning time.
+        time_t warntime;
+        time(&warntime);
+        setQuery(getHandle(), Information::setLastServiceWarn(warntime, serviceID));
+
+        // Insert warning into database.
+        stringstream alarmSQL;
+        alarmSQL  << "INSERT INTO alarms (alarm_type, timestamp, service_id, ms, service_state) VALUES ('2','"
+          << alarmtime
+          << "','"
+          << serviceID
+          << "','"
+          << qms
+          << "','"
+          << m_status
+          << "')";
+
+        if(!setQuery(getHandle(), alarmSQL.str()))
+          log.putLog(2, "002", "Could not update alarms table.");
+
+        if(mailData.doMailing)
+        {
+          vector<string> mailRecvList = Information::getMailWarningReceivers(getHandle(),
+            sGetQuery(Information::getServiceReceiverGroup(serviceID)), "4");
+
+          int mailRecvCount = 0;
+          int mailRecvListSize = mailRecvList.size();
+          while(mailRecvCount < mailRecvListSize)
+          {
+            if(!mailRecvList[mailRecvCount].empty())
+              mailing.sendMail(mailRecvList[mailRecvCount], warningSubj.str(), warningMsg.str());
+            mailRecvCount++;
+          }
+        }
+
+        // Get XMPP receivers.
+        if(xmppData.doXMPP)
+        {
+          vector<string> xmppRecvList = Information::getXMPPWarningReceivers(getHandle(),
+            sGetQuery(Information::getServiceReceiverGroup(
+            serviceID)),"3");
+
+          // Send a warning message to every XMPP receiver.
+          int xmppRecvCount = 0;
+          int xmppRecvListSize = xmppRecvList.size();
+          while(xmppRecvCount < xmppRecvListSize)
+          {
+            if(!xmppRecvList[xmppRecvCount].empty())
+              xmpp.sendMessage(warningMsg.str(), xmppRecvList[xmppRecvCount]);
+            xmppRecvCount++;
+          }
+        }
+
+        if(mobilecData.doMobileC && mailData.doMailing)
+        {
+          vector<string> mobilecRecvList = Information::getMobileCWarningReceivers(getHandle(),
+            sGetQuery(Information::getServiceReceiverGroup(serviceID)), "4");
+          int mobilecRecvCount = 0;
+          int mobilecRecvListSize = mobilecRecvList.size();
+          while(mobilecRecvCount < mobilecRecvListSize)
+          {
+            if(!mobilecRecvList[mobilecRecvCount].empty())
+            {
+              // Build the message that fits to the API.
+              stringstream newWarningMsg;
+              newWarningMsg << "user:" << mobilecData.username << endl
+                << "password:" << mobilecData.password << endl
+                << "api_id:" << mobilecData.apiID << endl
+                << "to:" << mobilecRecvList[mobilecRecvCount] << endl
+                << "text:" << warningMsg.str();
+              mailing.sendMail(CLICKATELLMAIL, warningSubj.str(), newWarningMsg.str());
+            }
+            mobilecRecvCount++;
+          }
+        }
+
+      }
+    }
+    mysql_close(getHandle());
+  }
+  else
+  {
+    log.putLog(2, "1234", "Could not connect to database for service warning/alarm.");
+  }
+}
+
+
+bool Services::storeResponseTime()
+{
 
   // Build the average response time.
   buildAverageResponseTime();
-	
+
   // Initialize database connection.
-	if(initConnection()){
-		stringstream queryLastData;
-		stringstream queryAllData;
+  if(initConnection())
+  {
+    stringstream queryLastData;
+    stringstream queryAllData;
 
-		time_t thistime;
-		time(&thistime);
+    time_t thistime;
+    time(&thistime);
 
-		queryAllData << "INSERT INTO servicerecords(timestamp, serviceid, ms) VALUES('"
-						<< thistime
-						<< "', '"
-						<< serviceID
-						<< "', '"
-						<< responseTime
-						<< "')";
+    queryAllData << "INSERT INTO servicerecords(timestamp, serviceid, ms) VALUES('"
+      << thistime
+      << "', '"
+      << serviceID
+      << "', '"
+      << responseTime
+      << "')";
 
-		queryLastData	<< "UPDATE services SET responsetime = "
-						<< responseTime
-						<< " WHERE id = "
-						<< serviceID;
+    queryLastData << "UPDATE services SET responsetime = "
+      << responseTime
+      << " WHERE id = "
+      << serviceID;
 
-		if(!setQuery(getHandle(), queryLastData.str())){
-			mysql_close(getHandle());
-			return 0;
-		}
+    if(!setQuery(getHandle(), queryLastData.str()))
+    {
+      mysql_close(getHandle());
+      return 0;
+    }
 
-		if(!setQuery(getHandle(), queryAllData.str())){
-			mysql_close(getHandle());
-			return 0;
-		}
+    if(!setQuery(getHandle(), queryAllData.str()))
+    {
+      mysql_close(getHandle());
+      return 0;
+    }
 
-		mysql_close(getHandle());
-		return 1;
-	}
+    mysql_close(getHandle());
+    return 1;
+  }
 
-	return 0;
+  return 0;
 }
+
 
 #define CHECKBUFSIZE 1024
 
-string Services::readWithTimeout(int socket){
-	// Our buffer.
-	char checkBuffer[CHECKBUFSIZE];
+string Services::readWithTimeout(int socket)
+{
+  // Our buffer.
+  char checkBuffer[CHECKBUFSIZE];
 
-	// Will hold the length of the reply.
-	int len;
+  // Will hold the length of the reply.
+  int len;
   len = read(socket, checkBuffer, CHECKBUFSIZE-1);
-  
-  if(len <= 0){
+
+  if(len <= 0)
+  {
     return "err-con";
   }
 
   // Terminate the string if the reply was not too long.
-	if(len < CHECKBUFSIZE){
-		checkBuffer[len] = '\0';
-	}else{
-		return "err-int";
-	}
+  if(len < CHECKBUFSIZE)
+  {
+    checkBuffer[len] = '\0';
+  }
+  else
+  {
+    return "err-int";
+  }
 
   stringstream res;
   res << checkBuffer;
@@ -621,264 +741,317 @@ string Services::readWithTimeout(int socket){
   return res.str();
 }
 
-int Services::checkSMTP(int sock){
 
-	int ms = 1;
+int Services::checkSMTP(int sock)
+{
 
-	// The message to send to the server.
-	const char* message = "EHLO example.org\n\r\n\r";
+  int ms = 1;
+
+  // The message to send to the server.
+  const char* message = "EHLO example.org\n\r\n\r";
 
   int len = 0;
 
-	// Send the message.
-	if((len = send(sock,message,strlen(message),0)) <= 0)
-		return -1;
+  // Send the message.
+  if((len = send(sock,message,strlen(message),0)) <= 0)
+    return -1;
 
-	Timer t;
-
-	t.startTimer();
-
-  string reply;
-
-	// Read the answer.
-  if((reply = readWithTimeout(sock)) == "err"){
-    if(reply == "err-con"){
-      return -1;
-    }else if(reply == "err-time"){
-      return -2;
-    }else{
-		  return -3;
-    }
-  }
-
-	ms = t.stopTimer();
-  
-	// Quit message to close the connection.
-	const char* quitMessage = "QUIT";
-
-	// Send the quit message.
-	if((len = send(sock,quitMessage,strlen(quitMessage),0)) <= 0)
-		return -1;
-
-	// If the first three chars are "220", there is a SMTP server running.
-	if(reply.substr(0,3) == "220")
-		return ms;
-
-	// The first three chars of the reply were not "220". No SMTP server running.
-	return -1;
-}
-
-int Services::checkHTTP(int sock){
-
-	int ms = 1;
-
-	// Will hold the length of the reply.
-	int len;
-
-	const char* message = "HEAD / HTTP/1.0\n\r\n\r";
-
-	// Send the message.
-	if((len = send(sock,message,strlen(message),0)) <= 0)
-		return -1;
-
-	Timer t;
-
-	t.startTimer();
-
-  string reply;
-
-	// Read the answer.
-  if((reply = readWithTimeout(sock)) == "err"){
-    if(reply == "err-con"){
-      return -1;
-    }else if(reply == "err-time"){
-      return -2;
-    }else{
-		  return -3;
-    }
-  }
-
-	ms = t.stopTimer();
-
-	// If the first five chars are "HTTP/", there is a HTTP server running.
-	if(reply.substr(0,5) == "HTTP/")
-		return ms;
-
-	// The first five chars of the reply were not "HTTP/". No HTTP server running.
-	return -1;
-}
-
-int Services::checkIMAP(int sock){
-
-	int ms = 1;
-
-	Timer t;
-
-	t.startTimer();
-
-  string reply;
-
-	// Read the answer.
-  if((reply = readWithTimeout(sock)) == "err"){
-    if(reply == "err-con"){
-      return -1;
-    }else if(reply == "err-time"){
-      return -2;
-    }else{
-		  return -3;
-    }
-  }
-
-	ms = t.stopTimer();
-
-	// If the first four chars are "* OK", there is an IMAP server running.
-	if(reply.substr(0,4) == "* OK")
-		return ms;
-
-	// The first four chars of the reply were not "* OK". No IMAP server running.
-	return -1;
-}
-
-int Services::checkPOP3(int sock){
-
-	int ms = 1;
-
-	// Will hold the length of the reply.
-	int len;
-
-	Timer t;
-
-	t.startTimer();
-
-  string reply;
-
-	// Read the answer.
-  if((reply = readWithTimeout(sock)) == "err"){
-    if(reply == "err-con"){
-      return -1;
-    }else if(reply == "err-time"){
-      return -2;
-    }else{
-		  return -3;
-    }
-  }
-
-	ms = t.stopTimer();
-
-	// Quit message to close the connection.
-	const char* message = "QUIT\n";
-
-	// Send the quit message.
-	if((len = send(sock,message,strlen(message),0)) <= 0)
-		return -1;
-
-	// If the first three chars are "* OK", there is an POP3 server running.
-	if(reply.substr(0,3) == "+OK")
-		return ms;
-
-	// The first three chars of the reply were not "+OK". No POP3 server running.
-	return -1;
-}
-
-int Services::checkSSH(int sock){
-
-	int ms = 1;
-	
   Timer t;
 
-	t.startTimer();
+  t.startTimer();
 
   string reply;
 
-	// Read the answer.
-  if((reply = readWithTimeout(sock)) == "err"){
-    if(reply == "err-con"){
+  // Read the answer.
+  if((reply = readWithTimeout(sock)) == "err")
+  {
+    if(reply == "err-con")
+    {
       return -1;
-    }else if(reply == "err-time"){
+    }
+    else if(reply == "err-time")
+    {
       return -2;
-    }else{
-		  return -3;
+    }
+    else
+    {
+      return -3;
     }
   }
 
-	ms = t.stopTimer();
+  ms = t.stopTimer();
 
-	// If the first three chars are "SSH", there is an SSH server running.
-	if(reply.substr(0,3) == "SSH")
-		return ms;
+  // Quit message to close the connection.
+  const char* quitMessage = "QUIT";
 
-	// The first three chars of the reply were not "SSH". No SSH server running.
-	return -1;
+  // Send the quit message.
+  if((len = send(sock,quitMessage,strlen(quitMessage),0)) <= 0)
+    return -1;
+
+  // If the first three chars are "220", there is a SMTP server running.
+  if(reply.substr(0,3) == "220")
+    return ms;
+
+  // The first three chars of the reply were not "220". No SMTP server running.
+  return -1;
 }
 
-int Services::checkFTP(int sock){
 
-	/*
-	 * Because the FTP protocol is very similar to the SMTP
-	 * protocol, we need to do some more checks.
-	 * We will check the first reply - If it begins with 220
-	 * there might be a FTP server running. Then we try to login.
-	 * If the next reply begins with 331, there is a very good
-	 * chance to have a FTP server.
-	 *
-	 */
+int Services::checkHTTP(int sock)
+{
 
-	int ms = 1;
-	int len;
+  int ms = 1;
 
-	Timer t;
-	t.startTimer();
+  // Will hold the length of the reply.
+  int len;
+
+  const char* message = "HEAD / HTTP/1.0\n\r\n\r";
+
+  // Send the message.
+  if((len = send(sock,message,strlen(message),0)) <= 0)
+    return -1;
+
+  Timer t;
+
+  t.startTimer();
 
   string reply;
 
-	// Read the answer.
-  if((reply = readWithTimeout(sock)) == "err"){
-    if(reply == "err-con"){
+  // Read the answer.
+  if((reply = readWithTimeout(sock)) == "err")
+  {
+    if(reply == "err-con")
+    {
       return -1;
-    }else if(reply == "err-time"){
+    }
+    else if(reply == "err-time")
+    {
       return -2;
-    }else{
-		  return -3;
+    }
+    else
+    {
+      return -3;
     }
   }
 
-	ms = t.stopTimer();
+  ms = t.stopTimer();
 
-	// If the first three chars are "220", there could be a FTP server running.
-	if(reply.substr(0,3) != "220")
-		return -1;
+  // If the first five chars are "HTTP/", there is a HTTP server running.
+  if(reply.substr(0,5) == "HTTP/")
+    return ms;
 
-	len = 0;
+  // The first five chars of the reply were not "HTTP/". No HTTP server running.
+  return -1;
+}
+
+
+int Services::checkIMAP(int sock)
+{
+
+  int ms = 1;
+
+  Timer t;
+
+  t.startTimer();
+
+  string reply;
+
+  // Read the answer.
+  if((reply = readWithTimeout(sock)) == "err")
+  {
+    if(reply == "err-con")
+    {
+      return -1;
+    }
+    else if(reply == "err-time")
+    {
+      return -2;
+    }
+    else
+    {
+      return -3;
+    }
+  }
+
+  ms = t.stopTimer();
+
+  // If the first four chars are "* OK", there is an IMAP server running.
+  if(reply.substr(0,4) == "* OK")
+    return ms;
+
+  // The first four chars of the reply were not "* OK". No IMAP server running.
+  return -1;
+}
+
+
+int Services::checkPOP3(int sock)
+{
+
+  int ms = 1;
+
+  // Will hold the length of the reply.
+  int len;
+
+  Timer t;
+
+  t.startTimer();
+
+  string reply;
+
+  // Read the answer.
+  if((reply = readWithTimeout(sock)) == "err")
+  {
+    if(reply == "err-con")
+    {
+      return -1;
+    }
+    else if(reply == "err-time")
+    {
+      return -2;
+    }
+    else
+    {
+      return -3;
+    }
+  }
+
+  ms = t.stopTimer();
+
+  // Quit message to close the connection.
+  const char* message = "QUIT\n";
+
+  // Send the quit message.
+  if((len = send(sock,message,strlen(message),0)) <= 0)
+    return -1;
+
+  // If the first three chars are "* OK", there is an POP3 server running.
+  if(reply.substr(0,3) == "+OK")
+    return ms;
+
+  // The first three chars of the reply were not "+OK". No POP3 server running.
+  return -1;
+}
+
+
+int Services::checkSSH(int sock)
+{
+
+  int ms = 1;
+
+  Timer t;
+
+  t.startTimer();
+
+  string reply;
+
+  // Read the answer.
+  if((reply = readWithTimeout(sock)) == "err")
+  {
+    if(reply == "err-con")
+    {
+      return -1;
+    }
+    else if(reply == "err-time")
+    {
+      return -2;
+    }
+    else
+    {
+      return -3;
+    }
+  }
+
+  ms = t.stopTimer();
+
+  // If the first three chars are "SSH", there is an SSH server running.
+  if(reply.substr(0,3) == "SSH")
+    return ms;
+
+  // The first three chars of the reply were not "SSH". No SSH server running.
+  return -1;
+}
+
+
+int Services::checkFTP(int sock)
+{
+
+  /*
+   * Because the FTP protocol is very similar to the SMTP
+   * protocol, we need to do some more checks.
+   * We will check the first reply - If it begins with 220
+   * there might be a FTP server running. Then we try to login.
+   * If the next reply begins with 331, there is a very good
+   * chance to have a FTP server.
+   *
+   */
+
+  int ms = 1;
+  int len;
+
+  Timer t;
+  t.startTimer();
+
+  string reply;
+
+  // Read the answer.
+  if((reply = readWithTimeout(sock)) == "err")
+  {
+    if(reply == "err-con")
+    {
+      return -1;
+    }
+    else if(reply == "err-time")
+    {
+      return -2;
+    }
+    else
+    {
+      return -3;
+    }
+  }
+
+  ms = t.stopTimer();
+
+  // If the first three chars are "220", there could be a FTP server running.
+  if(reply.substr(0,3) != "220")
+    return -1;
+
+  len = 0;
   reply = "";
 
-	// Try to login to make sure there is a FTP server running.
-	const char* testLoginMessage = "USER scopeport-service-check\n";
+  // Try to login to make sure there is a FTP server running.
+  const char* testLoginMessage = "USER scopeport-service-check\n";
 
-	// Send the quit message.
-	if((len = send(sock,testLoginMessage,strlen(testLoginMessage),0)) <= 0)
-		return -1;
+  // Send the quit message.
+  if((len = send(sock,testLoginMessage,strlen(testLoginMessage),0)) <= 0)
+    return -1;
 
-	// Read the answer.
-  if((reply = readWithTimeout(sock)) == "err"){
-    if(reply == "err-con"){
+  // Read the answer.
+  if((reply = readWithTimeout(sock)) == "err")
+  {
+    if(reply == "err-con")
+    {
       return -1;
-    }else if(reply == "err-time"){
+    }
+    else if(reply == "err-time")
+    {
       return -2;
-    }else{
-		  return -3;
+    }
+    else
+    {
+      return -3;
     }
   }
 
-	// If the first three chars are "331", there is a FTP server running.
-	if(reply.substr(0,3) != "331")
-		return -1;
+  // If the first three chars are "331", there is a FTP server running.
+  if(reply.substr(0,3) != "331")
+    return -1;
 
-	const char* quitMessage = "QUIT\n";
+  const char* quitMessage = "QUIT\n";
 
-	// Send the quit message.
-	len = send(sock,quitMessage,strlen(quitMessage),0);
+  // Send the quit message.
+  len = send(sock,quitMessage,strlen(quitMessage),0);
 
-	// All tests performed. There is a FTP server running.
-	return ms;
+  // All tests performed. There is a FTP server running.
+  return ms;
 }
-

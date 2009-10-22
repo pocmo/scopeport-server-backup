@@ -18,124 +18,124 @@
 //!  MySQL database connection and handling
 /*!
  * Connects to database and provides some general database methods for queries and table structure checks.
-*/
+ */
 
 #ifndef DATABASE_H_
 #define DATABASE_H_
 
 #include "../internal.h"
 
-class Database {
-	private:
-		//! Holds all names of tables that are checked in checkTables().
-		/*!
-		 * \sa checkTables()
-		 */
-		vector<string>	tables;
+class Database
+{
+  private:
+    //! Holds all names of tables that are checked in checkTables().
+    /*!
+     * \sa checkTables()
+     */
+    vector<string>  tables;
 
-		//! The MySQL handle.
-		MYSQL			*init;
+    //! The MySQL handle.
+    MYSQL     *init;
 
-		//! Holds the last error message.
-		string			error;
+    //! Holds the last error message.
+    string      error;
 
-		//! Holds the name of a missing table if found by checkTables().
-		/*!
-		 * \sa checkTables()
-		 */
-		string			missingcol;
+    //! Holds the name of a missing table if found by checkTables().
+    /*!
+     * \sa checkTables()
+     */
+    string      missingcol;
 
-		//! The host the MySQL database is running on.
-		const char*		mysql_host;
+    //! The host the MySQL database is running on.
+    const char*   mysql_host;
 
-		//! The user we want to connect with to the MySQL database.
-		const char*		mysql_user;
+    //! The user we want to connect with to the MySQL database.
+    const char*   mysql_user;
 
-		//! The MySQL user's password.
-		const char*		mysql_password;
+    //! The MySQL user's password.
+    const char*   mysql_password;
 
-		//! The ScopePort database on the MySQL host.
-		const char*		mysql_database;
+    //! The ScopePort database on the MySQL host.
+    const char*   mysql_database;
 
-		//! The port we want to use for MySQL connection. (0 means standard port)
-		int				mysql_port;
-	public:
-		//! Constructor. Converts sqlData values to single variables.
-		Database(mySQLData sqlData);
+    //! The port we want to use for MySQL connection. (0 means standard port)
+    int       mysql_port;
+  public:
+    //! Constructor. Converts sqlData values to single variables.
+    Database(mySQLData sqlData);
 
-		//! Opens connection to MySQL server
-		/*!
-		 * \return False if connection could not be established or creating the handle failed, true if connected to database.
-		 */
-		bool	initConnection();
+    //! Opens connection to MySQL server
+    /*!
+     * \return False if connection could not be established or creating the handle failed, true if connected to database.
+     */
+    bool  initConnection();
 
-		//! Performs query and does not give back any data. Useful for INSERT, UPDATE or DELETE queries.
-		/*!
-		 * \param init A MySQL handle.
-		 * \param query The query string.
-		 * \return True if the query has been executed successfully or false if an error occured.
-		 */
-		bool	setQuery(MYSQL* init, string query);
+    //! Performs query and does not give back any data. Useful for INSERT, UPDATE or DELETE queries.
+    /*!
+     * \param init A MySQL handle.
+     * \param query The query string.
+     * \return True if the query has been executed successfully or false if an error occured.
+     */
+    bool  setQuery(MYSQL* init, string query);
 
-		//! Performs query and gives back result string of first requested field.
-		/*
-		 * \param query The query string.
-		 * \return "NULL" if an error occured (or nothing was fetched) or the result string.
-		 */
-		string	sGetQuery(string query);
+    //! Performs query and gives back result string of first requested field.
+    /*
+     * \param query The query string.
+     * \return "NULL" if an error occured (or nothing was fetched) or the result string.
+     */
+    string  sGetQuery(string query);
 
-		//! Performs query and gives back number of fetched rows.
-		/*
-		 * \param query The query string.
-		 * \return The number of fetched rows.
-		 */
-		unsigned int getNumOfResults(string query);
+    //! Performs query and gives back number of fetched rows.
+    /*
+     * \param query The query string.
+     * \return The number of fetched rows.
+     */
+    unsigned int getNumOfResults(string query);
 
-		//! Performs query and gives back result string of first and second requested field separated by a whitespace.
-		/*
-		 * \param query The query string.
-		 * \return "NULL" if an error occured (or nothing was fetched) or the result string.
-		 */
-		string	sGetQuery2(string query);
+    //! Performs query and gives back result string of first and second requested field separated by a whitespace.
+    /*
+     * \param query The query string.
+     * \return "NULL" if an error occured (or nothing was fetched) or the result string.
+     */
+    string  sGetQuery2(string query);
 
-		//! Deletes data from table "sensordata" that is older than 31 days.
-		/*
-		 * \return False in case of error, true if everything went fine.
-		 */
-		bool	clearSensorData();
+    //! Deletes data from table "sensordata" that is older than 31 days.
+    /*
+     * \return False in case of error, true if everything went fine.
+     */
+    bool  clearSensorData();
 
-		//! Deletes data from table "servicedata" that is older than 24 hours.
-		/*
-		 * \return False in case of error, true if everything went fine.
-		 */
-		bool	clearServiceData();
+    //! Deletes data from table "servicedata" that is older than 24 hours.
+    /*
+     * \return False in case of error, true if everything went fine.
+     */
+    bool  clearServiceData();
 
-		//! Returns the MySQL handle.
-		/*!
-		 * \sa init
-		 * \sa initConnection()
-		 */
-		MYSQL*	getHandle() { return init; }
+    //! Returns the MySQL handle.
+    /*!
+     * \sa init
+     * \sa initConnection()
+     */
+    MYSQL*  getHandle() { return init; }
 
-		//! Returns the last error message.
-		/*!
-		 * \sa error
-		 */
-		string	getError() { return error; }
+    //! Returns the last error message.
+    /*!
+     * \sa error
+     */
+    string  getError() { return error; }
 
-		//! Returns the missing table reported by checkTables()
-		/*!
-		 * \sa checkTables()
-		 */
-		string	getMissingTable() { return missingcol; }
+    //! Returns the missing table reported by checkTables()
+    /*!
+     * \sa checkTables()
+     */
+    string  getMissingTable() { return missingcol; }
 
-		//! Returns the number of tables that should be checked.
-		/*!
-		 * \sa checkTables()
-		 */
-		int		getTableCount() { return tables.size(); }
+    //! Returns the number of tables that should be checked.
+    /*!
+     * \sa checkTables()
+     */
+    int   getTableCount() { return tables.size(); }
 
     static string escapeString(string escapeMe);
 };
-
-#endif /*DATABASE_H_*/
+#endif                                            /*DATABASE_H_*/
