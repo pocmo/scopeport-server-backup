@@ -60,6 +60,11 @@ class Database
 
     //! The port we want to use for MySQL connection. (0 means standard port)
     int       mysql_port;
+
+    mySQLData config;
+
+    void logLastDatabaseError();
+
   public:
     //! Constructor. Converts sqlData values to single variables.
     Database(mySQLData sqlData);

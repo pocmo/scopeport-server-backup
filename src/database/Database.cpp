@@ -21,6 +21,7 @@
 
 Database::Database(mySQLData sqlData)
 {
+  config = sqlData;
   mysql_host = sqlData.host;
   mysql_user = sqlData.user;
   mysql_password = sqlData.pass;
@@ -28,6 +29,14 @@ Database::Database(mySQLData sqlData)
   mysql_port = sqlData.port;
 }
 
+void Database::logLastDatabaseError()
+{
+  // Log this error.
+  Log log(LOGFILE, config);
+  stringstream msg;
+  msg << "Database query failed: " << error;
+  log.putLog(3, "SQL", msg.str());
+}
 
 bool Database::initConnection()
 {
@@ -68,8 +77,8 @@ bool Database::setQuery(MYSQL* init, string query)
   }
 
   // Query failed.
-
   error = mysql_error(init);
+  logLastDatabaseError();
 
   return 0;
 }
@@ -99,6 +108,11 @@ string Database::sGetQuery(string query)
     mysql_free_result(res);
     return result.str();
   }
+
+  // Query failed.
+  error = mysql_error(init);
+  logLastDatabaseError();
+
   return "NULL";
 }
 
@@ -120,6 +134,11 @@ unsigned int Database::getNumOfResults(string query)
     mysql_free_result(res);
     return num;
   }
+
+  // Query failed.
+  error = mysql_error(init);
+  logLastDatabaseError();
+
   return 0;
 }
 
@@ -149,6 +168,11 @@ string Database::sGetQuery2(string query)
     mysql_free_result(res);
     return result.str();
   }
+
+  // Query failed.
+  error = mysql_error(init);
+  logLastDatabaseError();
+
   return "NULL";
 }
 
@@ -164,6 +188,9 @@ bool Database::clearSensorData()
   }
 
   // Query failed.
+  error = mysql_error(init);
+  logLastDatabaseError();
+
   return 0;
 }
 
@@ -183,6 +210,9 @@ bool Database::clearServiceData()
   }
 
   // Query failed.
+  error = mysql_error(init);
+  logLastDatabaseError();
+
   return 0;
 }
 
